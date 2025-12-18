@@ -1,115 +1,189 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Lock, ArrowRight, BookOpen, X } from 'lucide-react';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
+    const [errors, setErrors] = useState([]); // Array untuk menampung banyak error
+    const navigate = useNavigate();
+
+    // Fungsi untuk menambah error baru
+    const addError = (message) => {
+        const id = Date.now();
+        const newError = { id, message, visible: true };
+        setErrors((prev) => [...prev, newError]);
+
+        // Mulai memudar setelah 2.7 detik (sebelum dihapus pada 3 detik)
+        setTimeout(() => {
+            setErrors((prev) =>
+                prev.map((err) => (err.id === id ? { ...err, visible: false } : err))
+            );
+        }, 2700);
+
+        // Hapus total setelah 3 detik
+        setTimeout(() => {
+            setErrors((prev) => prev.filter((err) => err.id !== id));
+        }, 3000);
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Login attempt:', { email, password });
-        // Handle login logic here later
+        
+        if (!username || !password) {
+            addError('Nama pengguna dan kata sandi harus diisi');
+            return;
+        }
+
+        // Logic login visual (client-side only for now)
+        if (username === '111' && password === '111') {
+            // Admin login
+            localStorage.setItem('userRole', 'admin');
+            localStorage.setItem('isAuthenticated', 'true');
+            console.log('Admin logged in');
+            navigate('/admin');
+        } else if (username === '222' && password === '222') {
+            // User login
+            localStorage.setItem('userRole', 'user');
+            localStorage.setItem('isAuthenticated', 'true');
+            console.log('User logged in');
+            navigate('/home');
+        } else {
+            addError('Nama pengguna/kata sandi salah');
+        }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden w-full max-w-4xl flex flex-col md:flex-row border border-white/20">
+        // BACKGROUND UTAMA: Putih Soft / Abu-abu sangat muda agar bersih
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 md:p-6">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-4xl flex flex-col md:flex-row border border-gray-100">
 
                 {/* Left Side - Brand/Visual */}
-                <div className="md:w-1/2 p-8 md:p-12 text-white flex flex-col justify-between relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-600/80 to-purple-600/80 z-0"></div>
-                    <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 group-hover:scale-110 transition-transform duration-700"></div>
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 group-hover:scale-110 transition-transform duration-700"></div>
+                <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-between relative overflow-hidden group bg-gray-50 min-h-[300px] md:min-h-full">
+                    
+                    {/* ELEMEN DEKORASI */}
+                    <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#FFE4E1] rounded-full mix-blend-multiply filter blur-3xl opacity-70 group-hover:scale-110 transition-transform duration-700"></div>
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#FFE4E1] rounded-full mix-blend-multiply filter blur-3xl opacity-70 group-hover:scale-110 transition-transform duration-700"></div>
 
                     <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="bg-white/20 p-2 rounded-lg">
-                                <BookOpen size={32} className="text-white" />
+                        <div className="flex items-center gap-3 mb-6 md:mb-12">
+                            {/* Icon Box */}
+                            <div className="bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+                                <BookOpen size={28} className="text-rose-400 md:w-8 md:h-8" />
                             </div>
-                            <h1 className="text-2xl font-bold tracking-wide">Bank Soal iSTTS</h1>
+                            <h1 className="text-xl md:text-2xl font-bold tracking-wide text-gray-800">Bank Soal iSTTS</h1>
                         </div>
 
-                        <div className="space-y-4">
-                            <h2 className="text-4xl font-extrabold leading-tight">
+                        <div className="space-y-3 md:space-y-4">
+                            <h2 className="text-3xl md:text-4xl font-extrabold leading-tight text-gray-900">
                                 Welcome Back!
                             </h2>
-                            <p className="text-indigo-100 text-lg">
+                            <p className="text-gray-500 text-base md:text-lg max-w-sm">
                                 Access the comprehensive exam inventory and management system.
                             </p>
                         </div>
                     </div>
 
-                    <div className="relative z-10 mt-12 text-sm text-indigo-200">
+                    <div className="relative z-10 mt-8 md:mt-12 text-sm text-gray-400">
                         &copy; {new Date().getFullYear()} iSTTS. All rights reserved.
                     </div>
                 </div>
 
                 {/* Right Side - Login Form */}
-                <div className="md:w-1/2 bg-white/95 p-8 md:p-12 relative">
+                <div className="w-full md:w-1/2 bg-white p-8 md:p-12 relative flex flex-col justify-center">
                     <div className="mb-8 text-center md:text-left">
-                        <h3 className="text-3xl font-bold text-gray-800 mb-2">Sign In</h3>
-                        <p className="text-gray-500">Please enter your credentials to continue.</p>
+                        <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Sign In</h3>
+                        <p className="text-gray-500 text-sm md:text-base">Please enter your credentials to continue.</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
+                        {/* USERNAME FIELD */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 ml-1">Email Address</label>
+                            <label className="text-sm font-medium text-gray-700 ml-1">Username</label>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                    <User className="h-5 w-5 text-gray-400 group-focus-within:text-rose-400 transition-colors" />
                                 </div>
                                 <input
-                                    type="email"
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200"
-                                    placeholder="admin@istts.ac.id"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    type="text"
+                                    className="block w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-100 focus:border-rose-300 transition-all duration-200 text-base"
+                                    placeholder="NRP / Username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
                                     required
                                 />
                             </div>
                         </div>
 
+                        {/* PASSWORD FIELD */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700 ml-1">Password</label>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-rose-400 transition-colors" />
                                 </div>
                                 <input
                                     type="password"
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200"
+                                    className="block w-full pl-11 pr-4 py-3 md:py-3.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-100 focus:border-rose-300 transition-all duration-200 text-base"
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    required
                                 />
-                            </div>
-                            <div className="flex justify-end">
-                                <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-                                    Forgot password?
-                                </a>
                             </div>
                         </div>
 
+                        {/* REMEMBER ME CHECKBOX */}
+                        <div className="flex items-center">
+                            <input
+                                id="remember-me"
+                                name="remember-me"
+                                type="checkbox"
+                                className="h-4.5 w-4.5 text-rose-500 focus:ring-rose-400 border-gray-300 rounded cursor-pointer"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                            />
+                            <label htmlFor="remember-me" className="ml-2.5 block text-sm text-gray-700 cursor-pointer select-none">
+                                Remember me
+                            </label>
+                        </div>
+
+                        {/* SUBMIT BUTTON */}
                         <button
                             type="submit"
-                            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-500/30 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:-translate-y-0.5"
+                            className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 px-4 rounded-xl shadow-md shadow-rose-100 text-sm md:text-base font-bold text-rose-900 bg-[#FFE4E1] hover:bg-[#ffccd5] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-200 transition-all duration-200 transform md:hover:-translate-y-0.5"
                         >
                             Sign In
-                            <ArrowRight size={18} />
+                            <ArrowRight size={20} />
                         </button>
                     </form>
-
-                    <div className="mt-8 text-center">
-                        <p className="text-sm text-gray-500">
-                            Don't have an account?{' '}
-                            <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
-                                Contact Admin
-                            </Link>
-                        </p>
-                    </div>
                 </div>
+            </div>
+
+            {/* STACKED ALERT TOASTS */}
+            <div className="fixed bottom-4 right-4 left-4 md:left-auto md:bottom-8 md:right-8 flex flex-col gap-3 items-center md:items-end z-[100]">
+                {errors.map((error) => (
+                    <div
+                        key={error.id}
+                        className={`w-full md:w-auto flex items-center bg-[#1a1a1a] text-white rounded-lg shadow-2xl overflow-hidden border-l-[6px] border-red-700 transition-all duration-300 ease-in-out transform ${
+                            error.visible 
+                                ? 'translate-y-0 opacity-100 scale-100' 
+                                : 'translate-y-2 opacity-0 scale-95'
+                        }`}
+                    >
+                        <div className="px-5 py-3.5 md:px-6 md:py-4 flex items-center justify-between gap-6 md:gap-12 w-full">
+                            <span className="text-sm md:text-base font-normal tracking-wide leading-tight">{error.message}</span>
+                            <button
+                                onClick={() => {
+                                    setErrors((prev) => prev.filter((err) => err.id !== error.id));
+                                }}
+                                className="text-gray-400 hover:text-white p-1 transition-colors flex-shrink-0"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

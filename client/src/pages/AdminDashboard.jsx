@@ -1,206 +1,132 @@
-import { useState } from 'react';
-import { Upload, File, X, CheckCircle, Download } from 'lucide-react';
-import axios from 'axios';
-import * as XLSX from 'xlsx';
+import React from 'react';
+import { 
+    FileText, 
+    Users, 
+    Download, 
+    AlertCircle, 
+    Bell, 
+    Clock, 
+    TrendingUp,
+    ChevronRight,
+    Plus,
+    UserPlus,
+    FileCheck
+} from 'lucide-react';
 
 const AdminDashboard = () => {
-    const [file, setFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [formData, setFormData] = useState({
-        title: '',
-        type: 'UTS',
-        year: new Date().getFullYear(),
-        matkul_id: '',
-    });
+    const stats = [
+        { title: 'Total Arsip Soal', value: '1,247', icon: <FileText className="text-blue-600" />, bg: 'bg-blue-50' },
+        { title: 'Mahasiswa Terdaftar', value: '3,456', icon: <Users className="text-green-600" />, bg: 'bg-green-50' },
+        { title: 'Total Unduhan', value: '12,890', icon: <Download className="text-amber-600" />, bg: 'bg-amber-50' },
+        { title: 'Laporan Masuk', value: '23', icon: <AlertCircle className="text-rose-600" />, bg: 'bg-rose-50' },
+    ];
 
-    const handleFileChange = (e) => {
-        if (e.target.files[0]) {
-            setFile(e.target.files[0]);
-        }
-    };
+    const activeNews = [
+        { id: 1, title: 'Jadwal UTS 2025 Dipindah', expiry: '28 Maret 2025', color: 'blue' },
+        { id: 2, title: 'Perpanjangan Waktu Upload', expiry: '15 April 2025', color: 'amber' },
+    ];
 
-    const handleExport = async () => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/soal`);
-            const data = response.data.map(item => ({
-                Judul: item.title,
-                'Mata Kuliah': item.Matkul?.name || '-',
-                Tipe: item.type,
-                Tahun: item.year,
-                'Diunduh': item.download_count,
-                'Link File': item.file_url
-            }));
+    const recentActivities = [
+        { id: 1, title: 'Soal UTS Matematika ditambahkan', time: '2 jam yang lalu', type: 'upload' },
+        { id: 2, title: 'Mahasiswa baru terdaftar', time: '5 jam yang lalu', type: 'user' },
+    ];
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Laporan Bank Soal");
-            XLSX.writeFile(wb, "Laporan_Bank_Soal.xlsx");
-        } catch (error) {
-            console.error("Export failed:", error);
-            alert("Gagal mengunduh laporan");
-        }
-    };
-
-    const handleUpload = async (e) => {
-        e.preventDefault();
-        if (!file) return alert('Pilih file PDF terlebih dahulu');
-
-        setUploading(true);
-        const data = new FormData();
-        data.append('file', file);
-        data.append('title', formData.title);
-        data.append('type', formData.type);
-        data.append('year', formData.year);
-
-        try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/soal`, data, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            alert('Upload Berhasil!');
-            setFile(null);
-            setFormData({ ...formData, title: '' });
-        } catch (error) {
-            console.error(error);
-            alert('Upload Gagal: ' + (error.response?.data?.message || error.message));
-        } finally {
-            setUploading(false);
-        }
-    };
+    const popularSoals = [
+        { id: 1, title: 'UAS Algoritma 2023', prodi: 'Teknik Informatika', downloads: '456 unduhan' },
+        { id: 2, title: 'UTS Kalkulus 2023', prodi: 'Teknik Sipil', downloads: '383 unduhan' },
+    ];
 
     return (
-        <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
-                <div className="flex gap-3">
-                    <button
-                        onClick={handleExport}
-                        className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all shadow-sm"
-                    >
-                        <Download className="w-4 h-4" />
-                        Export Laporan (.xlsx)
-                    </button>
-                    <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        System Operational
-                    </div>
-                </div>
+        <div className="space-y-8 pb-12">
+            {/* Header */}
+            <div className="space-y-2">
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard Admin</h1>
+                <p className="text-gray-500 text-lg">Ringkasan statistik sistem bank soal</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Upload Section */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <Upload className="w-5 h-5 text-blue-600" />
-                            Upload Soal Baru
-                        </h2>
-
-                        <form onSubmit={handleUpload} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Judul Soal</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Contoh: UTS Pemrograman Web 2023"
-                                    value={formData.title}
-                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Ujian</label>
-                                    <select
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        value={formData.type}
-                                        onChange={e => setFormData({ ...formData, type: e.target.value })}
-                                    >
-                                        <option value="UTS">UTS</option>
-                                        <option value="UAS">UAS</option>
-                                        <option value="Kuis">Kuis</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
-                                    <input
-                                        type="number"
-                                        required
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        value={formData.year}
-                                        onChange={e => setFormData({ ...formData, year: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* File Drop Zone */}
-                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-                                <input
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handleFileChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                {file ? (
-                                    <div className="flex items-center justify-center gap-2 text-blue-600">
-                                        <File className="w-6 h-6" />
-                                        <span className="font-medium">{file.name}</span>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.preventDefault(); setFile(null); }}
-                                            className="p-1 hover:bg-blue-100 rounded-full z-10"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <div className="mx-auto w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
-                                            <Upload className="w-6 h-6" />
-                                        </div>
-                                        <p className="text-sm text-gray-600">
-                                            <span className="font-semibold text-blue-600">Klik untuk upload</span> atau drag and drop
-                                        </p>
-                                        <p className="text-xs text-gray-400">PDF up to 10MB</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={uploading}
-                                className={`w-full py-2.5 rounded-lg font-medium text-white transition-all ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
-                                    }`}
-                            >
-                                {uploading ? 'Mengupload...' : 'Simpan ke Arsip'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                {/* Stats / Sidebar */}
-                <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h3 className="font-semibold text-gray-900 mb-4">Statistik Singkat</h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span className="text-gray-600">Total Soal</span>
-                                <span className="font-bold text-gray-900">1,240</span>
-                            </div>
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span className="text-gray-600">Download Hari Ini</span>
-                                <span className="font-bold text-gray-900">85</span>
-                            </div>
-                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span className="text-gray-600">Laporan Baru</span>
-                                <span className="font-bold text-red-600">3</span>
-                            </div>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {stats.map((stat, index) => (
+                    <div key={index} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 group hover:shadow-md transition-all">
+                        <div className={`p-4 ${stat.bg} rounded-2xl group-hover:scale-110 transition-transform`}>
+                            {stat.icon}
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                            <p className="text-2xl font-black text-gray-900">{stat.value}</p>
                         </div>
                     </div>
-                </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Berita Aktif */}
+                <section className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <Bell size={20} className="text-rose-500" />
+                            Berita Aktif
+                        </h2>
+                    </div>
+                    <div className="space-y-4">
+                        {activeNews.map(news => (
+                            <div key={news.id} className={`p-4 rounded-2xl border-l-4 flex items-center justify-between bg-gray-50 ${news.color === 'blue' ? 'border-blue-500' : 'border-amber-500'}`}>
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-gray-800 text-sm">{news.title}</h3>
+                                    <p className="text-[11px] text-gray-400">Berakhir: {news.expiry}</p>
+                                </div>
+                                <ChevronRight size={18} className="text-gray-300" />
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Aktivitas Terbaru */}
+                <section className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <Clock size={20} className="text-rose-500" />
+                        Aktivitas Terbaru
+                    </h2>
+                    <div className="space-y-4">
+                        {recentActivities.map(activity => (
+                            <div key={activity.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 group hover:bg-gray-100 transition-colors">
+                                <div className={`p-2 rounded-full ${activity.type === 'upload' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
+                                    {activity.type === 'upload' ? <Plus size={16} /> : <UserPlus size={16} />}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-800 text-sm">{activity.title}</h3>
+                                    <p className="text-[11px] text-gray-400">{activity.time}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Soal Populer */}
+                <section className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <TrendingUp size={20} className="text-rose-500" />
+                        Soal Populer
+                    </h2>
+                    <div className="space-y-2">
+                        {popularSoals.map(soal => (
+                            <div key={soal.id} className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-gray-50 rounded-xl">
+                                        <FileCheck size={20} className="text-gray-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-800 text-sm">{soal.title}</h3>
+                                        <p className="text-[11px] text-gray-400">{soal.prodi}</p>
+                                    </div>
+                                </div>
+                                <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                    {soal.downloads}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
             </div>
         </div>
     );
