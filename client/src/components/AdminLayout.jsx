@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { BookOpen, Menu, User as UserIcon, Bell, Settings } from 'lucide-react';
+import { BookOpen, Menu, Settings } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
+import NotificationDropdown from './NotificationDropdown';
 
 const AdminLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,10 +37,7 @@ const AdminLayout = () => {
                             <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider">System Live</span>
                         </div>
 
-                        <button className="p-2 text-gray-400 hover:text-rose-600 transition-colors relative">
-                            <Bell size={22} />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-                        </button>
+                        <NotificationDropdown />
                         
                         <div className="h-8 w-[1px] bg-gray-200 mx-2 hidden sm:block"></div>
 
@@ -75,4 +73,3 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
-
