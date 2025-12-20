@@ -10,14 +10,14 @@ import {
     X, 
     LogOut 
 } from 'lucide-react';
+import { logout } from '../services/authService';
 
 const AdminSidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
+        logout(); // Menggunakan service logout untuk clear semua data
         navigate('/');
     };
 

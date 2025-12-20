@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, ArrowRight, BookOpen, X } from 'lucide-react';
+import { User, Lock, ArrowRight, BookOpen, X, Loader2 } from 'lucide-react';
+import { login } from '../services/authService';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
     const [errors, setErrors] = useState([]); // Array untuk menampung banyak error
+    const [isLoading, setIsLoading] = useState(false); // Loading state
     const navigate = useNavigate();
 
     // Fungsi untuk menambah error baru
@@ -28,29 +30,56 @@ const Login = () => {
         }, 3000);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
+        // Validasi input
         if (!username || !password) {
-            addError('Nama pengguna dan kata sandi harus diisi');
+            addError('NRP dan password harus diisi');
             return;
         }
 
-        // Logic login visual (client-side only for now)
-        if (username === '111' && password === '111') {
-            // Admin login
-            localStorage.setItem('userRole', 'admin');
-            localStorage.setItem('isAuthenticated', 'true');
-            console.log('Admin logged in');
-            navigate('/admin');
-        } else if (username === '222' && password === '222') {
-            // User login
-            localStorage.setItem('userRole', 'user');
-            localStorage.setItem('isAuthenticated', 'true');
-            console.log('User logged in');
-            navigate('/home');
-        } else {
-            addError('Nama pengguna/kata sandi salah');
+        // Set loading state
+        setIsLoading(true);
+
+        try {
+            // Panggil service login
+            const result = await login(username, password);
+            
+            if (result.success) {
+                // Simpan data ke localStorage
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('userRole', result.data.role);
+                localStorage.setItem('userNrp', result.data.nrp);
+                localStorage.setItem('userName', result.data.name || 'User');
+                
+                if (result.data.email) {
+                    localStorage.setItem('userEmail', result.data.email);
+                }
+                
+                // Simpan token jika ada (untuk API mode)
+                if (result.data.token) {
+                    localStorage.setItem('authToken', result.data.token);
+                }
+                if (result.data.refreshToken) {
+                    localStorage.setItem('refreshToken', result.data.refreshToken);
+                }
+                
+                // Redirect berdasarkan role
+                if (result.data.role === 'admin') {
+                    navigate('/admin');
+                } else {
+                    navigate('/home');
+                }
+            } else {
+                // Tampilkan error message
+                addError(result.message || 'NRP atau password salah');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            addError('Terjadi kesalahan. Silakan coba lagi.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -151,10 +180,20 @@ const Login = () => {
                         {/* SUBMIT BUTTON */}
                         <button
                             type="submit"
-                            className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 px-4 rounded-xl shadow-md shadow-rose-100 text-sm md:text-base font-bold text-rose-900 bg-[#FFE4E1] hover:bg-[#ffccd5] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-200 transition-all duration-200 transform md:hover:-translate-y-0.5"
+                            disabled={isLoading}
+                            className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 px-4 rounded-xl shadow-md shadow-rose-100 text-sm md:text-base font-bold text-rose-900 bg-[#FFE4E1] hover:bg-[#ffccd5] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-200 transition-all duration-200 transform md:hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         >
-                            Sign In
-                            <ArrowRight size={20} />
+                            {isLoading ? (
+                                <>
+                                    <Loader2 size={20} className="animate-spin" />
+                                    <span>Memproses...</span>
+                                </>
+                            ) : (
+                                <>
+                                    Sign In
+                                    <ArrowRight size={20} />
+                                </>
+                            )}
                         </button>
                     </form>
                 </div>

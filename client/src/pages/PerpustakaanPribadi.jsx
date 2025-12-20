@@ -5,26 +5,38 @@ const PerpustakaanPribadi = () => {
     const savedSoals = [
         {
             id: 1,
-            title: 'UAS Algoritma dan Pemrograman',
-            prodi: 'Teknik Informatika',
-            year: '2023',
-            type: 'UAS',
+            namaMatkul: 'Algoritma dan Pemrograman',
+            kodeMatkul: 'IF101',
+            jenisUjian: 'UAS',
+            semester: 'Ganjil',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Dr. Ahmad Wijaya, S.Kom., M.Kom.',
+            programStudi: 'S1-Informatika',
+            fakultas: 'Fakultas Teknologi Informasi',
             savedDate: '15 Jan 2025'
         },
         {
             id: 2,
-            title: 'UTS Basis Data',
-            prodi: 'Teknik Informatika',
-            year: '2024',
-            type: 'UTS',
+            namaMatkul: 'Basis Data',
+            kodeMatkul: 'IF201',
+            jenisUjian: 'UTS',
+            semester: 'Genap',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Prof. Dr. Budi Santoso, S.Kom., M.T.',
+            programStudi: 'S1-Informatika',
+            fakultas: 'Fakultas Teknologi Informasi',
             savedDate: '12 Jan 2025'
         },
         {
             id: 3,
-            title: 'UAS Kalkulus',
-            prodi: 'Teknik Sipil',
-            year: '2023',
-            type: 'UAS',
+            namaMatkul: 'Kalkulus',
+            kodeMatkul: 'MT101',
+            jenisUjian: 'UAS',
+            semester: 'Ganjil',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Dr. Siti Nurhaliza, S.Si., M.Si.',
+            programStudi: 'S1-Teknik Elektro',
+            fakultas: 'Fakultas Teknik',
             savedDate: '10 Jan 2025'
         }
     ];
@@ -48,28 +60,56 @@ const PerpustakaanPribadi = () => {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {savedSoals.map(soal => (
-                        <div key={soal.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-start gap-4 flex-1">
-                                    <div className="p-3 bg-rose-50 rounded-xl">
-                                        <FileText className="text-rose-600" size={24} />
-                                    </div>
-                                    <div className="space-y-1 flex-1">
-                                        <h3 className="font-bold text-gray-900 text-lg">{soal.title}</h3>
-                                        <p className="text-sm text-gray-500">{soal.prodi} • {soal.year} • {soal.type}</p>
-                                        <div className="flex items-center gap-2 text-xs text-gray-400 pt-1">
-                                            <Calendar size={14} />
-                                            <span>Disimpan: {soal.savedDate}</span>
+                        <div key={soal.id} className="bg-white p-4 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                            <div className="mb-4 space-y-2">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-gray-900 text-base md:text-lg leading-tight mb-1">
+                                            {soal.namaMatkul}
+                                        </h3>
+                                        <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-500 mb-2">
+                                            <span className="font-medium text-rose-600">{soal.kodeMatkul}</span>
+                                            <span>•</span>
+                                            <span>{soal.jenisUjian}</span>
+                                            <span>•</span>
+                                            <span>{soal.semester}</span>
+                                            <span>•</span>
+                                            <span>{soal.tahunAjaran}</span>
                                         </div>
+                                    </div>
+                                    <span className="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-bold rounded-full whitespace-nowrap">
+                                        {soal.jenisUjian}
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5 text-xs md:text-sm">
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                        <div>
+                                            <span className="text-gray-500">Program Studi:</span>
+                                            <span className="text-gray-900 font-medium ml-1">{soal.programStudi}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-500">Fakultas:</span>
+                                            <span className="text-gray-900 font-medium ml-1">{soal.fakultas}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500">Dosen Pengampu:</span>
+                                        <span className="text-gray-900 font-medium ml-1">{soal.dosenPengampu}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-gray-400 pt-1">
+                                        <Calendar size={14} />
+                                        <span>Disimpan: {soal.savedDate}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 pt-4 border-t border-gray-50">
-                                <button className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-sm font-bold rounded-xl hover:bg-rose-700 transition-colors">
-                                    <Download size={16} /> Unduh
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3 pt-4 border-t border-gray-50">
+                                <button className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95">
+                                    <Download size={14} className="md:w-4 md:h-4" /> 
+                                    <span>Unduh</span>
                                 </button>
-                                <button className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors">
-                                    <Trash2 size={16} /> Hapus
+                                <button className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg md:rounded-xl transition-colors active:scale-95">
+                                    <Trash2 size={14} className="md:w-4 md:h-4" /> 
+                                    <span>Hapus</span>
                                 </button>
                             </div>
                         </div>

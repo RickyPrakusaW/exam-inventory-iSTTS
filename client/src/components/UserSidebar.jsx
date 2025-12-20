@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Newspaper, Search, Bookmark, History, TrendingUp, X, LogOut, BookOpen } from 'lucide-react';
+import { logout } from '../services/authService';
 
 const UserSidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
+        logout(); // Menggunakan service logout untuk clear semua data
         navigate('/');
     };
 

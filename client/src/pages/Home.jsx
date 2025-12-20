@@ -39,21 +39,68 @@ const Home = () => {
     const popularSoals = [
         {
             id: 1,
-            title: 'UAS Algoritma dan Pemrograman',
-            prodi: 'Teknik Informatika',
-            year: '2023',
-            type: 'UAS',
-            likes: 89
+            namaMatkul: 'Algoritma dan Pemrograman',
+            kodeMatkul: 'IF101',
+            jenisUjian: 'UAS',
+            semester: 'Ganjil',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Dr. Ahmad Wijaya, S.Kom., M.Kom.',
+            programStudi: 'S1-Informatika',
+            fakultas: 'Fakultas Teknologi Informasi',
+            likes: 89,
+            downloads: 456
+        },
+        {
+            id: 2,
+            namaMatkul: 'Basis Data',
+            kodeMatkul: 'IF201',
+            jenisUjian: 'UTS',
+            semester: 'Genap',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Prof. Dr. Budi Santoso, S.Kom., M.T.',
+            programStudi: 'S1-Informatika',
+            fakultas: 'Fakultas Teknologi Informasi',
+            likes: 67,
+            downloads: 389
+        },
+        {
+            id: 3,
+            namaMatkul: 'Kalkulus',
+            kodeMatkul: 'MT101',
+            jenisUjian: 'UAS',
+            semester: 'Ganjil',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Dr. Siti Nurhaliza, S.Si., M.Si.',
+            programStudi: 'S1-Teknik Elektro',
+            fakultas: 'Fakultas Teknik',
+            likes: 52,
+            downloads: 312
         }
     ];
 
     const recentSoals = [
         {
             id: 1,
-            title: 'UTS Basis Data',
-            prodi: 'Teknik Informatika',
-            year: '2024',
-            type: 'UTS',
+            namaMatkul: 'Basis Data',
+            kodeMatkul: 'IF201',
+            jenisUjian: 'UTS',
+            semester: 'Genap',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Prof. Dr. Budi Santoso, S.Kom., M.T.',
+            programStudi: 'S1-Informatika',
+            fakultas: 'Fakultas Teknologi Informasi',
+            isNew: true
+        },
+        {
+            id: 2,
+            namaMatkul: 'Pemrograman Web',
+            kodeMatkul: 'IF301',
+            jenisUjian: 'UAS',
+            semester: 'Ganjil',
+            tahunAjaran: '2023/2024',
+            dosenPengampu: 'Dr. Rudi Hartono, S.Kom., M.T.',
+            programStudi: 'S1-Informatika',
+            fakultas: 'Fakultas Teknologi Informasi',
             isNew: true
         }
     ];
@@ -160,25 +207,48 @@ const Home = () => {
                     </h2>
                     <div className="space-y-4">
                         {popularSoals.map(soal => (
-                            <div key={soal.id} className="bg-white p-6 rounded-3xl border border-gray-50 shadow-sm hover:shadow-md transition-all space-y-4 group">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-1">
-                                        <h3 className="font-bold text-gray-900 group-hover:text-rose-600 transition-colors">{soal.title}</h3>
-                                        <p className="text-xs text-gray-500">{soal.prodi} • {soal.year} • {soal.type}</p>
+                            <div key={soal.id} className="bg-white p-4 md:p-6 rounded-xl md:rounded-3xl border border-gray-50 shadow-sm hover:shadow-md transition-all space-y-3 md:space-y-4 group">
+                                <div className="space-y-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-gray-900 text-base md:text-lg group-hover:text-rose-600 transition-colors leading-tight mb-1">
+                                                {soal.namaMatkul}
+                                            </h3>
+                                            <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-500">
+                                                <span className="font-medium text-rose-600">{soal.kodeMatkul}</span>
+                                                <span>•</span>
+                                                <span>{soal.jenisUjian}</span>
+                                                <span>•</span>
+                                                <span>{soal.semester}</span>
+                                                <span>•</span>
+                                                <span>{soal.tahunAjaran}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-rose-500 bg-rose-50 px-2 py-1 rounded-lg shrink-0">
+                                            <ThumbsUp size={14} fill="currentColor" />
+                                            <span className="text-xs font-bold">{soal.likes}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1 text-rose-500 bg-rose-50 px-2 py-1 rounded-lg">
-                                        <ThumbsUp size={14} fill="currentColor" />
-                                        <span className="text-xs font-bold">{soal.likes}</span>
+                                    <div className="text-xs md:text-sm space-y-1">
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                            <span className="text-gray-500">Prodi:</span>
+                                            <span className="text-gray-900 font-medium">{soal.programStudi}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                            <span className="text-gray-500">Dosen:</span>
+                                            <span className="text-gray-900 font-medium">{soal.dosenPengampu}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 pt-2">
-                                    <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition-colors">
-                                        <Download size={14} /> Unduh
+                                <div className="flex flex-wrap items-center gap-2 pt-2">
+                                    <button className="flex-1 flex items-center justify-center gap-1.5 md:gap-2 py-2 md:py-2.5 bg-rose-600 text-white text-xs font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95">
+                                        <Download size={14} /> 
+                                        <span>Unduh</span>
                                     </button>
-                                    <button className="px-4 py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                                    <button className="px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95">
                                         <Bookmark size={14} />
                                     </button>
-                                    <button className="px-4 py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                                    <button className="px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95">
                                         <ThumbsUp size={14} />
                                     </button>
                                 </div>
@@ -195,24 +265,47 @@ const Home = () => {
                     </h2>
                     <div className="space-y-4">
                         {recentSoals.map(soal => (
-                            <div key={soal.id} className="bg-white p-6 rounded-3xl border border-gray-50 shadow-sm hover:shadow-md transition-all space-y-4 group">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-1">
-                                        <h3 className="font-bold text-gray-900 group-hover:text-rose-600 transition-colors">{soal.title}</h3>
-                                        <p className="text-xs text-gray-500">{soal.prodi} • {soal.year} • {soal.type}</p>
+                            <div key={soal.id} className="bg-white p-4 md:p-6 rounded-xl md:rounded-3xl border border-gray-50 shadow-sm hover:shadow-md transition-all space-y-3 md:space-y-4 group">
+                                <div className="space-y-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-gray-900 text-base md:text-lg group-hover:text-rose-600 transition-colors leading-tight mb-1">
+                                                {soal.namaMatkul}
+                                            </h3>
+                                            <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-500">
+                                                <span className="font-medium text-rose-600">{soal.kodeMatkul}</span>
+                                                <span>•</span>
+                                                <span>{soal.jenisUjian}</span>
+                                                <span>•</span>
+                                                <span>{soal.semester}</span>
+                                                <span>•</span>
+                                                <span>{soal.tahunAjaran}</span>
+                                            </div>
+                                        </div>
+                                        {soal.isNew && (
+                                            <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shrink-0">Baru</span>
+                                        )}
                                     </div>
-                                    {soal.isNew && (
-                                        <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">Baru</span>
-                                    )}
+                                    <div className="text-xs md:text-sm space-y-1">
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                            <span className="text-gray-500">Prodi:</span>
+                                            <span className="text-gray-900 font-medium">{soal.programStudi}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                            <span className="text-gray-500">Dosen:</span>
+                                            <span className="text-gray-900 font-medium">{soal.dosenPengampu}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 pt-2">
-                                    <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition-colors">
-                                        <Download size={14} /> Unduh
+                                <div className="flex flex-wrap items-center gap-2 pt-2">
+                                    <button className="flex-1 flex items-center justify-center gap-1.5 md:gap-2 py-2 md:py-2.5 bg-rose-600 text-white text-xs font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95">
+                                        <Download size={14} /> 
+                                        <span>Unduh</span>
                                     </button>
-                                    <button className="px-4 py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                                    <button className="px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95">
                                         <Bookmark size={14} />
                                     </button>
-                                    <button className="px-4 py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                                    <button className="px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95">
                                         <ThumbsUp size={14} />
                                     </button>
                                 </div>
