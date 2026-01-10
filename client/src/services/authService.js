@@ -184,3 +184,58 @@ export const getCurrentUser = () => {
     };
 };
 
+/**
+ * Update user profile (email and/or password)
+ * @param {Object} updateData - Object containing email, currentPassword, and/or newPassword
+ * @returns {Promise<Object>} - Success/error response
+ */
+export const updateProfile = async (updateData) => {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            return {
+                success: false,
+                message: 'Anda belum login. Silakan login terlebih dahulu.'
+            };
+        }
+
+        // Get API URL - default to localhost for development
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const endpoint = `${API_URL}/auth/profile`;
+
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updateData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Update localStorage if email was changed
+            if (data.user && data.user.email) {
+                localStorage.setItem('userEmail', data.user.email);
+            }
+
+            return {
+                success: true,
+                message: data.message || 'Profile berhasil diupdate',
+                data: data.user
+            };
+        } else {
+            return {
+                success: false,
+                message: data.message || 'Gagal mengupdate profile'
+            };
+        }
+    } catch (error) {
+        console.error('Update profile error:', error);
+        return {
+            success: false,
+            message: 'Terjadi kesalahan pada server. Silakan coba lagi nanti.'
+        };
+    }
+};

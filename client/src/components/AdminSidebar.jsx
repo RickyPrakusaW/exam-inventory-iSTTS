@@ -7,6 +7,7 @@ import {
     AlertTriangle, 
     Newspaper, 
     Download, 
+    User, 
     X, 
     LogOut 
 } from 'lucide-react';
@@ -28,6 +29,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         { name: 'Laporan Mahasiswa', icon: <AlertTriangle size={22} />, path: '/admin/laporan' },
         { name: 'Manajemen Berita', icon: <Newspaper size={22} />, path: '/admin/berita' },
         { name: 'Ekspor Data', icon: <Download size={22} />, path: '/admin/ekspor' },
+        { name: 'Ganti Username & Password', icon: <User size={22} />, path: '/admin/profile' },
     ];
 
     return (
