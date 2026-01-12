@@ -91,9 +91,17 @@ const ManajemenSoal = () => {
             if (response.ok) {
                 handleCloseModal();
                 fetchSoals();
+                showToast('Soal berhasil disimpan', 'success');
             } else {
-                const err = await response.json();
-                showToast(err.message || 'Failed to save soal', 'error');
+                let errorMessage = 'Failed to save soal';
+                try {
+                    const err = await response.json();
+                    errorMessage = err.message || errorMessage;
+                } catch (e) {
+                    console.error("Non-JSON error response", e);
+                    errorMessage = 'Terjadi kesalahan pada server';
+                }
+                showToast(errorMessage, 'error');
             }
         } catch (error) {
             console.error('Error saving soal:', error);

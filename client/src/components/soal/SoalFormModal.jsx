@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../contexts/ToastContext';
 
 const SoalFormModal = ({ isOpen, onClose, onSubmit, initialData, matkuls }) => {
+    const { showToast } = useToast();
     const [soalForm, setSoalForm] = useState({ 
         title: '', 
         type: 'UTS', 
@@ -36,6 +38,13 @@ const SoalFormModal = ({ isOpen, onClose, onSubmit, initialData, matkuls }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        
+        // Validate file size (10MB)
+        if (soalForm.file && soalForm.file.size > 10 * 1024 * 1024) {
+             showToast('File terlalu besar. Maksimal ukuran file adalah 10 MB.', 'error');
+             return;
+        }
+
         onSubmit(soalForm);
     }
 

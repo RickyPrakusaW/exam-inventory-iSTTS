@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const dotenv = require('dotenv');
 const { sequelize } = require('./models');
 
@@ -34,6 +35,28 @@ app.use('/api/library', libraryRoutes);
 // Test Route
 app.get('/', (req, res) => {
     res.send('Bank Soal Digital API is running...');
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        // Multer specific errors
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ 
+                message: 'File too large. Maximum size is 10MB.' 
+            });
+        }
+        return res.status(400).json({ 
+            message: `Upload error: ${err.message}` 
+        });
+    } else if (err) {
+        // Other errors
+        console.error(err);
+        return res.status(500).json({ 
+            message: err.message || 'Internal Server Error' 
+        });
+    }
+    next();
 });
 
 // Sync Database and Start Server
