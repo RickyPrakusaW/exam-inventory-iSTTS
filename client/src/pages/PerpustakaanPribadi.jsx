@@ -1,45 +1,56 @@
-import React from 'react';
-import { Bookmark, Download, Trash2, FileText, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bookmark, Download, Trash2, Calendar } from 'lucide-react';
 
 const PerpustakaanPribadi = () => {
-    const savedSoals = [
-        {
-            id: 1,
-            namaMatkul: 'Algoritma dan Pemrograman',
-            kodeMatkul: 'IF101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Ahmad Wijaya, S.Kom., M.Kom.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            savedDate: '15 Jan 2025'
-        },
-        {
-            id: 2,
-            namaMatkul: 'Basis Data',
-            kodeMatkul: 'IF201',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Prof. Dr. Budi Santoso, S.Kom., M.T.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            savedDate: '12 Jan 2025'
-        },
-        {
-            id: 3,
-            namaMatkul: 'Kalkulus',
-            kodeMatkul: 'MT101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Siti Nurhaliza, S.Si., M.Si.',
-            programStudi: 'S1-Teknik Elektro',
-            fakultas: 'Fakultas Teknik',
-            savedDate: '10 Jan 2025'
+    const [savedSoals, setSavedSoals] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const userId = localStorage.getItem('userId');
+
+    const fetchLibrary = async () => {
+        if (!userId) {
+            setLoading(false);
+            return;
         }
-    ];
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/library/${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setSavedSoals(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch library", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchLibrary();
+    }, [userId]);
+
+    const handleRemove = async (soalId) => {
+        if (!confirm('Hapus soal dari perpustakaan?')) return;
+        try {
+            const response = await fetch(`http://localhost:5000/api/library/${userId}/${soalId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                setSavedSoals(prev => prev.filter(s => s.id !== soalId));
+            } else {
+                alert('Gagal menghapus');
+            }
+        } catch (error) {
+            console.error('Error removing soal:', error);
+        }
+    };
+
+    const handleDownload = (url) => {
+        if (url) window.open(url, '_blank');
+        else alert('File URL not found');
+    };
+
+    if (loading) return <div className="text-center py-12 text-gray-500">Memuat perpustakaan...</div>;
 
     return (
         <div className="space-y-8 pb-12">
@@ -98,16 +109,22 @@ const PerpustakaanPribadi = () => {
                                     </div>
                                     <div className="flex items-center gap-2 text-xs text-gray-400 pt-1">
                                         <Calendar size={14} />
-                                        <span>Disimpan: {soal.savedDate}</span>
+                                        <span>Disimpan: {new Date(soal.savedDate).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 md:gap-3 pt-4 border-t border-gray-50">
-                                <button className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95">
+                                <button 
+                                    onClick={() => handleDownload(soal.file_url)}
+                                    className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95"
+                                >
                                     <Download size={14} className="md:w-4 md:h-4" /> 
                                     <span>Unduh</span>
                                 </button>
-                                <button className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg md:rounded-xl transition-colors active:scale-95">
+                                <button 
+                                    onClick={() => handleRemove(soal.id)}
+                                    className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg md:rounded-xl transition-colors active:scale-95"
+                                >
                                     <Trash2 size={14} className="md:w-4 md:h-4" /> 
                                     <span>Hapus</span>
                                 </button>
@@ -121,4 +138,3 @@ const PerpustakaanPribadi = () => {
 };
 
 export default PerpustakaanPribadi;
-

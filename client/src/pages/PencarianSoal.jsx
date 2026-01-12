@@ -64,8 +64,31 @@ const PencarianSoal = () => {
         window.open(url, '_blank');
     };
 
-    const handleSave = () => {
-        alert("Fitur simpan ke perpustakaan pribadi belum tersedia.");
+    const handleSave = async (soalId) => {
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+            alert('Silakan login terlebih dahulu');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/library', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, soalId })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('Berhasil disimpan ke perpustakaan pribadi');
+            } else {
+                alert(data.message || 'Gagal menyimpan');
+            }
+        } catch (error) {
+            console.error("Failed to save soal", error);
+            alert("Terjadi kesalahan saat menyimpan");
+        }
     };
 
     return (
@@ -201,7 +224,7 @@ const PencarianSoal = () => {
                                         <span>Unduh</span>
                                     </button>
                                     <button 
-                                        onClick={handleSave}
+                                        onClick={() => handleSave(soal.id)}
                                         className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95 flex-shrink-0"
                                     >
                                         <Bookmark className="w-3.5 h-3.5 md:w-4 md:h-4" />

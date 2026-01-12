@@ -83,6 +83,7 @@ export const apiLogin = async (identifier, password) => {
                 success: true,
                 data: {
                     nrp: data.user?.nrp || data.nrp || data.nim || data.username,
+                    id: data.user?.id || data.id, // Include ID
                     role: (data.user?.role || data.role || determineRole(data)) === 'mahasiswa' ? 'user' : (data.user?.role || data.role || determineRole(data)), // Normalisasi role mahasiswa -> user
                     name: data.user?.name || data.name || data.nama || data.full_name,
                     email: data.user?.email || data.email || data.email_address,

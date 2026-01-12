@@ -51,6 +51,7 @@ const Login = () => {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('userRole', result.data.role);
                 localStorage.setItem('userNrp', result.data.nrp);
+                if (result.data.id) localStorage.setItem('userId', result.data.id);
                 localStorage.setItem('userName', result.data.name || 'User');
                 
                 if (result.data.email) {
