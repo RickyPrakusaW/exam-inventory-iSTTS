@@ -1,15 +1,22 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Op } = require('../models');
 
 const register = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password, role, nrp } = req.body;
 
         // Check if user exists
-        const existingUser = await User.findOne({ where: { email } });
+        const existingUser = await User.findOne({ 
+            where: { 
+                [Op.or]: [
+                    { email },
+                    { nrp }
+                ]
+            } 
+        });
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already registered' });
+            return res.status(400).json({ message: 'Email/NRP already registered' });
         }
 
         // Hash password
@@ -21,6 +28,7 @@ const register = async (req, res) => {
             email,
             password: hashedPassword,
             role: role || 'mahasiswa',
+            nrp: nrp || null,
         });
 
         res.status(201).json({ message: 'User registered successfully' });
@@ -31,10 +39,18 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { identifier, password } = req.body;
 
-        // Find user
-        const user = await User.findOne({ where: { email } });
+        // Find user by email or nrp
+        const { Op } = require('sequelize');
+        const user = await User.findOne({ 
+            where: { 
+                [Op.or]: [
+                    { email: identifier },
+                    { nrp: identifier }
+                ]
+            } 
+        });
         if (!user) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }

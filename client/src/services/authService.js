@@ -58,10 +58,10 @@ export const dummyLogin = async (nrp, password) => {
  * 
  * TODO: Update endpoint dan request/response format sesuai API kampus Anda
  */
-export const apiLogin = async (nrp, password) => {
+export const apiLogin = async (identifier, password) => {
     try {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://api-kampus-anda.com';
-        const endpoint = `${API_URL}/auth/login`; // Sesuaikan endpoint API kampus
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const endpoint = `${API_URL}/auth/login`;
         
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -70,7 +70,7 @@ export const apiLogin = async (nrp, password) => {
                 // Tambahkan headers lain jika diperlukan (API key, dll)
             },
             body: JSON.stringify({ 
-                nrp: nrp, 
+                identifier: identifier, 
                 password: password 
             })
         });
@@ -121,29 +121,28 @@ const determineRole = (apiData) => {
 
 /**
  * Main login function
- * Switch antara dummy dan real API berdasarkan environment variable
+ * Switch between dummy and real API based on environment variable
  */
-export const login = async (nrp, password) => {
-    // Validasi input
-    if (!nrp || !password) {
+export const login = async (identifier, password) => {
+    // Validate input
+    if (!identifier || !password) {
         return {
             success: false,
-            message: 'NRP dan password harus diisi'
+            message: 'Username/NRP dan password harus diisi'
         };
     }
     
-    // Check environment variable untuk menentukan mode
-    // Default ke dummy mode jika tidak ada environment variable
-    const USE_DUMMY = import.meta.env.VITE_USE_DUMMY_AUTH === 'true' || 
-                      !import.meta.env.VITE_API_URL ||
-                      import.meta.env.MODE === 'development';
+    // Check environment variable to determine mode
+    // Prioritize API mode if VITE_API_URL is set OR if we are just running normally without forcing dummy
+    // ONLY force dummy if explicitly set to 'true'
+    const USE_DUMMY = import.meta.env.VITE_USE_DUMMY_AUTH === 'true';
     
     if (USE_DUMMY) {
         console.log('🔧 Using DUMMY authentication mode');
-        return await dummyLogin(nrp, password);
+        return await dummyLogin(identifier, password);
     } else {
         console.log('🌐 Using API authentication mode');
-        return await apiLogin(nrp, password);
+        return await apiLogin(identifier, password);
     }
 };
 
