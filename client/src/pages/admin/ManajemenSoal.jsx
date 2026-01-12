@@ -8,6 +8,7 @@ import SoalFormModal from '../../components/soal/SoalFormModal';
 
 const ManajemenSoal = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Semua Status');
 
     const [soals, setSoals] = useState([]);
     const [matkuls, setMatkuls] = useState([]); // Need matkuls for dropdown
@@ -111,9 +112,10 @@ const ManajemenSoal = () => {
     };
 
     const filteredSoals = soals.filter(soal => 
-        soal.namaMatkul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (statusFilter === 'Semua Status' || soal.status === statusFilter) &&
+        (soal.namaMatkul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         soal.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        soal.kodeMatkul?.toLowerCase().includes(searchTerm.toLowerCase())
+        soal.kodeMatkul?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
@@ -138,7 +140,11 @@ const ManajemenSoal = () => {
                     </div>
                     <div className="flex gap-3">
                         <div className="relative flex-1">
-                            <select className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base">
+                            <select 
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base"
+                            >
                                 <option>Semua Status</option>
                                 <option>Aktif</option>
                                 <option>Nonaktif</option>
