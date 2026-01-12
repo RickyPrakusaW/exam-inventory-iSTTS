@@ -123,7 +123,12 @@ const importPdfs = async () => {
                 const destPath = path.join(__dirname, '..', 'public', 'uploads', uniqueName);
 
                 // Ensure directory exists (redundant if mkdir run, but safe)
-                // fs.mkdirSync(path.dirname(destPath), { recursive: true });
+                if (!fs.existsSync(path.dirname(destPath))) {
+                    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+                }
+
+                // Copy file
+                fs.copyFileSync(sourcePath, destPath);
 
                 let fileUrl = `http://localhost:5000/uploads/${uniqueName}`;
                 let driveId = 'local-file';
