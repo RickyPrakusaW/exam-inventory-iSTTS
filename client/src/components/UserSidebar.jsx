@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Newspaper, Search, Bookmark, History, TrendingUp, X, LogOut, BookOpen } from 'lucide-react';
+import { Home, Newspaper, Search, Bookmark, History, TrendingUp, X, LogOut, BookOpen, Settings } from 'lucide-react';
 import { logout } from '../services/authService';
 
 const UserSidebar = ({ isOpen, onClose }) => {
@@ -19,6 +19,7 @@ const UserSidebar = ({ isOpen, onClose }) => {
         { name: 'Perpustakaan Pribadi', icon: <Bookmark size={22} />, path: '/library' },
         { name: 'Riwayat Unduhan', icon: <History size={22} />, path: '/history' },
         { name: 'Progres Belajar', icon: <TrendingUp size={22} />, path: '/progress' },
+        { name: 'Pengaturan Akun', icon: <Settings size={22} />, path: '/settings' },
     ];
 
     return (

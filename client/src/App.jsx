@@ -17,6 +17,7 @@ import PencarianSoal from './pages/PencarianSoal';
 import PerpustakaanPribadi from './pages/PerpustakaanPribadi';
 import RiwayatUnduhan from './pages/RiwayatUnduhan';
 import ProgresBelajar from './pages/ProgresBelajar';
+import Pengaturan from './pages/Pengaturan';
 import NotFound from './pages/NotFound';
 
 import { ToastProvider } from './contexts/ToastContext';
@@ -40,6 +41,7 @@ function App() {
                   <Route path="/library" element={<PerpustakaanPribadi />} />
                   <Route path="/history" element={<RiwayatUnduhan />} />
                   <Route path="/progress" element={<ProgresBelajar />} />
+                  <Route path="/settings" element={<Pengaturan />} />
                 </Route>
               </Route>
 
