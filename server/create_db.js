@@ -1,26 +1,22 @@
+
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const createDatabase = async () => {
+const createDb = async () => {
     try {
+        const { DB_HOST, DB_USER, DB_PASS, DB_NAME } = process.env;
         const connection = await mysql.createConnection({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASS,
-            port: process.env.DB_PORT || 3306
+            host: DB_HOST,
+            user: DB_USER,
+            password: DB_PASS,
         });
-        
-        console.log('Connected to MySQL server...');
 
-        const dbName = process.env.DB_NAME;
-        await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
-        console.log(`Database '${dbName}' created or successfully checked.`);
-        
+        await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;`);
+        console.log(`Database '${DB_NAME}' created or already exists.`);
         await connection.end();
-    } catch (err) {
-        console.error('Error checking/creating database:', err.message);
-        console.log('\nTIP: Make sure your DB_USER and DB_PASS in .env are correct and MySQL is running.');
+    } catch (error) {
+        console.error('Error creating database:', error);
     }
 };
 
-createDatabase();
+createDb();
