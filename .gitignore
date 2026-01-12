@@ -62,3 +62,5 @@ temp/
 # Google Drive credentials (if any)
 credentials.json
 token.json
+client/.env.development
+client/.env.production
