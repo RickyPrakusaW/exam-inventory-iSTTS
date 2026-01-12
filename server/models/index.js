@@ -6,6 +6,7 @@ const Soal = require('./Soal');
 const Laporan = require('./Laporan');
 
 const UserSavedSoal = require('./UserSavedSoal');
+const Berita = require('./Berita');
 
 // Associations
 
@@ -40,5 +41,6 @@ module.exports = {
     Matkul,
     Soal,
     Laporan,
-    UserSavedSoal
+    UserSavedSoal,
+    Berita
 };

@@ -1,49 +1,91 @@
-import React, { useState } from 'react';
-import { Newspaper, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Newspaper, Filter, Plus } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import SearchInput from '../../components/SearchInput';
 import BeritaCard from '../../components/berita/BeritaCard';
+import BeritaFormModal from '../../components/berita/BeritaFormModal';
+import { getBerita, createBerita, updateBerita, deleteBerita } from '../../services/beritaService';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 
 const ManajemenBerita = () => {
+    const { showToast } = useToast();
+    const { confirm } = useConfirmation();
     const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState('Semua Jenis');
+    
+    const [berita, setBerita] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
 
-    const berita = [
-        {
-            id: 1,
-            title: 'Jadwal UTS 2025 Dipindah',
-            desc: 'UTS yang semula dijadwalkan tanggal 20 Maret dipindah ke tanggal 28 Maret 2025.',
-            type: 'Pengumuman',
-            startDate: '15 Jan 2025',
-            endDate: '28 Mar 2025',
-            views: 1234,
-            status: 'Aktif'
-        },
-        {
-            id: 2,
-            title: 'Perpanjangan Waktu Upload',
-            desc: 'Waktu upload soal diperpanjang hingga 15 April 2025.',
-            type: 'Informasi',
-            startDate: '10 Jan 2025',
-            endDate: '15 Apr 2025',
-            views: 856,
-            status: 'Aktif'
-        },
-        {
-            id: 3,
-            title: 'Panduan Penggunaan Bank Soal',
-            desc: 'Panduan lengkap penggunaan sistem bank soal untuk mahasiswa.',
-            type: 'Panduan',
-            startDate: '5 Jan 2025',
-            endDate: '31 Des 2025',
-            views: 2341,
-            status: 'Aktif'
+    const fetchBerita = async () => {
+        try {
+            setLoading(true);
+            const data = await getBerita();
+            setBerita(data);
+        } catch (error) {
+            showToast('Gagal memuat berita', 'error');
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
 
-    const filteredBerita = berita.filter(item => 
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        item.type.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    useEffect(() => {
+        fetchBerita();
+    }, []);
+
+    const handleOpenModal = (item = null) => {
+        setSelectedItem(item);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedItem(null);
+    };
+
+    const handleSubmit = async (formData) => {
+        try {
+            if (selectedItem) {
+                await updateBerita(selectedItem.id, formData);
+                showToast('Berita berhasil diperbarui', 'success');
+            } else {
+                await createBerita(formData);
+                showToast('Berita berhasil ditambahkan', 'success');
+            }
+            fetchBerita();
+            handleCloseModal();
+        } catch (error) {
+            showToast('Gagal menyimpan berita', 'error');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        const isConfirmed = await confirm({
+            title: 'Hapus Berita',
+            message: 'Apakah Anda yakin ingin menghapus berita ini secara permanen?',
+            confirmText: 'Hapus',
+            type: 'danger'
+        });
+
+        if (!isConfirmed) return;
+
+        try {
+            await deleteBerita(id);
+            showToast('Berita berhasil dihapus', 'success');
+            fetchBerita();
+        } catch (error) {
+            showToast('Gagal menghapus berita', 'error');
+        }
+    };
+
+    const filteredBerita = berita.filter(item => {
+        const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              item.type.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesType = typeFilter === 'Semua Jenis' || item.type === typeFilter;
+        return matchesSearch && matchesType;
+    });
 
     return (
         <div className="space-y-6 md:space-y-8 pb-12">
@@ -52,7 +94,7 @@ const ManajemenBerita = () => {
                 subtitle="Kelola pengumuman dan informasi untuk mahasiswa"
                 icon={Newspaper}
                 buttonText="Tambah Berita"
-                onButtonClick={() => console.log('Add news')}
+                onButtonClick={() => handleOpenModal(null)}
             />
 
             {/* Search & Filter */}
@@ -67,7 +109,11 @@ const ManajemenBerita = () => {
                     </div>
                     <div className="flex gap-3">
                         <div className="relative flex-1">
-                            <select className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base">
+                            <select 
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base"
+                            >
                                 <option>Semua Jenis</option>
                                 <option>Pengumuman</option>
                                 <option>Informasi</option>
@@ -80,16 +126,29 @@ const ManajemenBerita = () => {
             </div>
 
             {/* Berita List */}
-            <div className="grid grid-cols-1 gap-4">
-                {filteredBerita.map(item => (
-                    <BeritaCard 
-                        key={item.id} 
-                        item={item} 
-                        onEdit={(item) => console.log('Edit', item)}
-                        onDelete={(id) => console.log('Delete', id)}
-                    />
-                ))}
-            </div>
+            {loading ? (
+                <div className="text-center py-12 text-gray-500">Memuat data...</div>
+            ) : filteredBerita.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">Tidak ada berita ditemukan.</div>
+            ) : (
+                <div className="grid grid-cols-1 gap-4">
+                    {filteredBerita.map(item => (
+                        <BeritaCard 
+                            key={item.id} 
+                            item={item} 
+                            onEdit={handleOpenModal}
+                            onDelete={handleDelete}
+                        />
+                    ))}
+                </div>
+            )}
+
+            <BeritaFormModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                onSubmit={handleSubmit}
+                initialData={selectedItem}
+            />
         </div>
     );
 };
