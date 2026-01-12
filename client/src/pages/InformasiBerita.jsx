@@ -1,73 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Newspaper, Calendar, FileText, Search, Filter } from 'lucide-react';
+import { getBerita } from '../services/beritaService';
 
 const InformasiBerita = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedYear, setSelectedYear] = useState('');
     const [selectedMonth, setSelectedMonth] = useState('');
+    
+    const [allBerita, setAllBerita] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const allBerita = [
-        {
-            id: 1,
-            title: 'Jadwal UTS 2025 Dipindah',
-            desc: 'UTS yang semula dijadwalkan tanggal 20 Maret dipindah ke tanggal 28 Maret 2025.',
-            date: '15 Jan 2025',
-            year: 2025,
-            month: 1,
-            type: 'Pengumuman',
-            color: 'blue'
-        },
-        {
-            id: 2,
-            title: 'Perpanjangan Waktu Upload',
-            desc: 'Waktu upload soal diperpanjang hingga 15 April 2025.',
-            date: '10 Jan 2025',
-            year: 2025,
-            month: 1,
-            type: 'Informasi',
-            color: 'amber'
-        },
-        {
-            id: 3,
-            title: 'Panduan Penggunaan Bank Soal',
-            desc: 'Panduan lengkap penggunaan sistem bank soal untuk mahasiswa tersedia di halaman bantuan.',
-            date: '5 Jan 2025',
-            year: 2025,
-            month: 1,
-            type: 'Panduan',
-            color: 'green'
-        },
-        {
-            id: 4,
-            title: 'Pengumuman Ujian Semester Genap',
-            desc: 'Ujian semester genap akan dilaksanakan mulai tanggal 15 Juni 2025.',
-            date: '20 Mar 2025',
-            year: 2025,
-            month: 3,
-            type: 'Pengumuman',
-            color: 'blue'
-        },
-        {
-            id: 5,
-            title: 'Update Sistem Bank Soal',
-            desc: 'Sistem bank soal telah diperbarui dengan fitur pencarian yang lebih baik.',
-            date: '12 Feb 2025',
-            year: 2025,
-            month: 2,
-            type: 'Informasi',
-            color: 'amber'
-        },
-        {
-            id: 6,
-            title: 'Jadwal UAS Semester Genap 2024',
-            desc: 'Ujian Akhir Semester akan dilaksanakan pada bulan Desember 2024.',
-            date: '15 Des 2024',
-            year: 2024,
-            month: 12,
-            type: 'Pengumuman',
-            color: 'blue'
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const data = await getBerita();
+                // Transform data if necessary or just use it
+                // Real data: { id, title, desc, type, startDate, endDate, status }
+                // We map it to include helper fields for filtering if we want, or do it on the fly
+                // Let's add parsed date fields for easier filtering
+                const mappedData = data.filter(item => item.status === 'Aktif').map(item => {
+                    const dateObj = new Date(item.startDate);
+                    return {
+                        ...item,
+                        date: item.startDate, // Keep original or format it
+                        year: dateObj.getFullYear(),
+                        month: dateObj.getMonth() + 1,
+                        color: getItemColor(item.type)
+                    };
+                });
+                setAllBerita(mappedData);
+            } catch (error) {
+                console.error("Failed to fetch berita", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const getItemColor = (type) => {
+        switch(type) {
+            case 'Pengumuman': return 'blue';
+            case 'Informasi': return 'amber';
+            case 'Panduan': return 'green';
+            default: return 'gray';
         }
-    ];
+    };
 
     // Get unique years from berita
     const years = [...new Set(allBerita.map(item => item.year))].sort((a, b) => b - a);
@@ -171,7 +149,9 @@ const InformasiBerita = () => {
             </div>
 
             {/* Results */}
-            {filteredBerita.length === 0 ? (
+            {loading ? (
+                <div className="text-center py-12 text-gray-500">Memuat data...</div>
+            ) : filteredBerita.length === 0 ? (
                 <div className="bg-white p-8 md:p-12 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 text-center">
                     <Newspaper className="mx-auto mb-4 text-gray-300 w-12 h-12 md:w-16 md:h-16" />
                     <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2">Tidak Ada Berita Ditemukan</h3>
@@ -204,7 +184,7 @@ const InformasiBerita = () => {
                                     <p className="text-xs md:text-sm text-gray-500 leading-relaxed">{item.desc}</p>
                                     <div className="flex items-center gap-2 text-[10px] md:text-xs text-gray-400 pt-1 md:pt-2">
                                         <Calendar className="w-3 h-3 md:w-[14px] md:h-[14px]" />
-                                        <span>{item.date}</span>
+                                        <span>{new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                                     </div>
                                 </div>
                             </div>

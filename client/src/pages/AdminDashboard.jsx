@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { getBerita } from '../services/beritaService';
+
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -37,21 +39,32 @@ const AdminDashboard = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:5000/api/dashboard/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                // Parallel fetch for dashboard stats and news
+                const [statsResponse, newsData] = await Promise.all([
+                    fetch('http://localhost:5000/api/dashboard/stats', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    getBerita()
+                ]);
 
-                if (response.ok) {
-                    const data = await response.json();
+                if (statsResponse.ok) {
+                    const data = await statsResponse.json();
                     setStats(data.stats);
                     setPopularSoals(data.popularSoals);
                     setRecentActivities(data.recentActivities);
-                    // setActiveNews(data.activeNews); // Keep empty if not implemented
                 } else {
-                    console.error('Failed to fetch dashboard data');
+                    console.error('Failed to fetch dashboard stats');
                 }
+
+                if (newsData) {
+                    // Filter active news and sort by start date descending
+                    const active = newsData
+                        .filter(item => item.status === 'Aktif')
+                        .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+                        .slice(0, 5); // Take top 5
+                    setActiveNews(active);
+                }
+
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
             } finally {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Search, 
     Download, 
@@ -11,30 +11,35 @@ import {
     Clock,
     Filter
 } from 'lucide-react';
+import { getBerita } from '../services/beritaService';
 
 const Home = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [announcements, setAnnouncements] = useState([]);
 
-    const announcements = [
-        {
-            id: 1,
-            title: 'Jadwal UTS 2025 Dipindah',
-            desc: 'UTS yang semula dijadwalkan tanggal 20 Maret dipindah ke tanggal 28 Maret 2025.',
-            date: '15 Jan 2025',
-            expiry: '28 Mar 2025',
-            type: 'Pengumuman',
-            color: 'blue'
-        },
-        {
-            id: 2,
-            title: 'Perpanjangan Waktu Upload',
-            desc: 'Waktu upload soal diperpanjang hingga 15 April 2025.',
-            date: '10 Jan 2025',
-            expiry: '15 Apr 2025',
-            type: 'Informasi',
-            color: 'amber'
-        }
-    ];
+    useEffect(() => {
+        const fetchAnnouncements = async () => {
+            try {
+                const data = await getBerita();
+                const activeAnnouncements = data
+                    .filter(item => item.status === 'Aktif')
+                    .slice(0, 2)
+                    .map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        desc: item.desc,
+                        date: new Date(item.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                        expiry: new Date(item.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                        type: item.type,
+                        color: item.type === 'Pengumuman' ? 'blue' : (item.type === 'Info' ? 'amber' : 'green')
+                    }));
+                setAnnouncements(activeAnnouncements);
+            } catch (error) {
+                console.error("Failed to fetch announcements", error);
+            }
+        };
+        fetchAnnouncements();
+    }, []);
 
     const popularSoals = [
         {
