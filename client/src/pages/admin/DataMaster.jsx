@@ -8,38 +8,129 @@ const DataMaster = () => {
     const [matkul, setMatkul] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [prodiRes, matkulRes] = await Promise.all([
-                    fetch('http://localhost:5000/api/master/prodi'),
-                    fetch('http://localhost:5000/api/master/matkul')
-                ]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
+    const [selectedItem, setSelectedItem] = useState(null);
 
-                if (prodiRes.ok) {
-                    const data = await prodiRes.json();
-                    setProdi(data);
-                }
-                
-                if (matkulRes.ok) {
-                    const data = await matkulRes.json();
-                    // Map matkul data to match frontend requirements if needed, mainly 'prodi' name
-                    const formattedMatkul = data.map(m => ({
-                        ...m,
-                        prodi: m.Prodi ? m.Prodi.name : 'Unknown',
-                        jumlahSoal: m.dataValues ? m.dataValues.jumlahSoal : m.jumlahSoal // Sequelize aggregate might be in dataValues or direct
-                    }));
-                    setMatkul(formattedMatkul);
-                }
-            } catch (error) {
-                console.error('Failed to fetch master data:', error);
-            } finally {
-                setLoading(false);
+    // Form States
+    const [prodiForm, setProdiForm] = useState({ name: '', code: '', fakultas: '' });
+    const [matkulForm, setMatkulForm] = useState({ name: '', code: '', semester: '', prodi_id: '' });
+
+    const resetForms = () => {
+        setProdiForm({ name: '', code: '', fakultas: '' });
+        setMatkulForm({ name: '', code: '', semester: '', prodi_id: '' });
+        setSelectedItem(null);
+        setModalMode('create');
+    };
+
+    const handleOpenModal = (mode = 'create', item = null) => {
+        setModalMode(mode);
+        setSelectedItem(item);
+        if (activeTab === 'prodi') {
+            if (item) {
+                setProdiForm({ name: item.name, code: item.code, fakultas: item.fakultas });
+            } else {
+                setProdiForm({ name: '', code: '', fakultas: '' });
             }
-        };
+        } else {
+            if (item) {
+                setMatkulForm({ 
+                    name: item.name, 
+                    code: item.code, 
+                    semester: item.semester, 
+                    prodi_id: item.Prodi ? item.Prodi.id : (prodi.find(p => p.name === item.prodi)?.id || '') 
+                });
+            } else {
+                setMatkulForm({ name: '', code: '', semester: '', prodi_id: '' });
+            }
+        }
+        setIsModalOpen(true);
+    };
 
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        resetForms();
+    };
+
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [prodiRes, matkulRes] = await Promise.all([
+                fetch('http://localhost:5000/api/master/prodi'),
+                fetch('http://localhost:5000/api/master/matkul')
+            ]);
+
+            if (prodiRes.ok) {
+                const data = await prodiRes.json();
+                setProdi(data);
+            }
+            
+            if (matkulRes.ok) {
+                const data = await matkulRes.json();
+                // Map matkul data to match frontend requirements if needed, mainly 'prodi' name
+                const formattedMatkul = data.map(m => ({
+                    ...m,
+                    prodi: m.Prodi ? m.Prodi.name : 'Unknown',
+                    jumlahSoal: m.dataValues ? m.dataValues.jumlahSoal : m.jumlahSoal // Sequelize aggregate might be in dataValues or direct
+                }));
+                setMatkul(formattedMatkul);
+            }
+        } catch (error) {
+            console.error('Failed to fetch master data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchData();
     }, []);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const endpoint = activeTab === 'prodi' ? 'http://localhost:5000/api/master/prodi' : 'http://localhost:5000/api/master/matkul';
+        const method = modalMode === 'create' ? 'POST' : 'PUT';
+        const url = modalMode === 'create' ? endpoint : `${endpoint}/${selectedItem.id}`;
+        const body = activeTab === 'prodi' ? prodiForm : matkulForm;
+
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (response.ok) {
+                handleCloseModal();
+                fetchData();
+            } else {
+                alert('Failed to save data');
+            }
+        } catch (error) {
+            console.error('Error saving data:', error);
+            alert('Error saving data');
+        }
+    };
+
+    const handleDelete = async (id, type) => {
+        if (!window.confirm('Are you sure you want to delete this item?')) return;
+
+        const endpoint = type === 'prodi' ? 'http://localhost:5000/api/master/prodi' : 'http://localhost:5000/api/master/matkul';
+        try {
+            const response = await fetch(`${endpoint}/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                fetchData();
+            } else {
+                const data = await response.json();
+                alert(data.message || 'Failed to delete data');
+            }
+        } catch (error) {
+            console.error('Error deleting data:', error);
+            alert('Error deleting data');
+        }
+    };
+
 
     return (
         <div className="space-y-6 md:space-y-8 pb-12">
@@ -51,9 +142,11 @@ const DataMaster = () => {
                     </h1>
                     <p className="text-gray-500 text-base md:text-lg">Kelola data program studi dan mata kuliah</p>
                 </div>
-                <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-rose-600 text-white text-sm md:text-base font-bold rounded-xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-100 active:scale-95">
+                <button 
+                    onClick={() => handleOpenModal('create')}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-rose-600 text-white text-sm md:text-base font-bold rounded-xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-100 active:scale-95">
                     <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                    <span className="md:inline">Tambah Data</span>
+                    <span className="md:inline">Tambah Data {activeTab === 'prodi' ? 'Prodi' : 'Matkul'}</span>
                 </button>
             </div>
 
@@ -119,11 +212,15 @@ const DataMaster = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 pt-2 border-t border-gray-50">
-                                        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
+                                        <button 
+                                            onClick={() => handleOpenModal('edit', item)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
                                             <Edit className="w-3.5 h-3.5" />
                                             Edit
                                         </button>
-                                        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 transition-colors">
+                                        <button 
+                                            onClick={() => handleDelete(item.id, 'prodi')}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 transition-colors">
                                             <Trash2 className="w-3.5 h-3.5" />
                                             Hapus
                                         </button>
@@ -162,10 +259,14 @@ const DataMaster = () => {
                                             </td>
                                             <td className="px-4 md:px-6 py-3 md:py-4">
                                                 <div className="flex items-center gap-2">
-                                                    <button className="p-1.5 md:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                    <button 
+                                                        onClick={() => handleOpenModal('edit', item)}
+                                                        className="p-1.5 md:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                                                         <Edit className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                                                     </button>
-                                                    <button className="p-1.5 md:p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                                    <button 
+                                                        onClick={() => handleDelete(item.id, 'prodi')}
+                                                        className="p-1.5 md:p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
                                                         <Trash2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                                                     </button>
                                                 </div>
@@ -203,11 +304,15 @@ const DataMaster = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 pt-2 border-t border-gray-50">
-                                        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
+                                        <button 
+                                            onClick={() => handleOpenModal('edit', item)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
                                             <Edit className="w-3.5 h-3.5" />
                                             Edit
                                         </button>
-                                        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 transition-colors">
+                                        <button 
+                                            onClick={() => handleDelete(item.id, 'matkul')}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 transition-colors">
                                             <Trash2 className="w-3.5 h-3.5" />
                                             Hapus
                                         </button>
@@ -241,10 +346,14 @@ const DataMaster = () => {
                                             <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-600">{item.jumlahSoal} soal</td>
                                             <td className="px-4 md:px-6 py-3 md:py-4">
                                                 <div className="flex items-center gap-2">
-                                                    <button className="p-1.5 md:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                    <button 
+                                                        onClick={() => handleOpenModal('edit', item)}
+                                                        className="p-1.5 md:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                                                         <Edit className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                                                     </button>
-                                                    <button className="p-1.5 md:p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                                    <button 
+                                                        onClick={() => handleDelete(item.id, 'matkul')}
+                                                        className="p-1.5 md:p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
                                                         <Trash2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                                                     </button>
                                                 </div>
@@ -257,6 +366,129 @@ const DataMaster = () => {
                     </>
                 )}
             </div>
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-bold text-gray-900">
+                                {modalMode === 'create' ? 'Tambah' : 'Edit'} {activeTab === 'prodi' ? 'Program Studi' : 'Mata Kuliah'}
+                            </h3>
+                            <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600">
+                                <span className="sr-only">Close</span>
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {activeTab === 'prodi' ? (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Nama Program Studi</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={prodiForm.name}
+                                            onChange={(e) => setProdiForm({ ...prodiForm, name: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none transition-all"
+                                            placeholder="Contoh: Informatika"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Kode</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={prodiForm.code}
+                                            onChange={(e) => setProdiForm({ ...prodiForm, code: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none transition-all"
+                                            placeholder="Contoh: IF"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fakultas</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={prodiForm.fakultas}
+                                            onChange={(e) => setProdiForm({ ...prodiForm, fakultas: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none transition-all"
+                                            placeholder="Contoh: Fakultas Teknologi Informasi"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Nama Mata Kuliah</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={matkulForm.name}
+                                            onChange={(e) => setMatkulForm({ ...matkulForm, name: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none transition-all"
+                                            placeholder="Contoh: Pemrograman Web"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Kode</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={matkulForm.code}
+                                            onChange={(e) => setMatkulForm({ ...matkulForm, code: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none transition-all"
+                                            placeholder="Contoh: IF-101"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            value={matkulForm.semester}
+                                            onChange={(e) => setMatkulForm({ ...matkulForm, semester: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none transition-all"
+                                            placeholder="Contoh: 1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Program Studi</label>
+                                        <select
+                                            required
+                                            value={matkulForm.prodi_id}
+                                            onChange={(e) => setMatkulForm({ ...matkulForm, prodi_id: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none transition-all"
+                                        >
+                                            <option value="">Pilih Program Studi</option>
+                                            {prodi.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={handleCloseModal}
+                                    className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2.5 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors shadow-lg shadow-rose-100"
+                                >
+                                    Simpan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

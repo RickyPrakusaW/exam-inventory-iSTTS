@@ -5,5 +5,7 @@ const soalController = require('../controllers/soalController');
 
 router.post('/', upload.single('file'), soalController.createSoal);
 router.get('/', soalController.getAllSoal);
+router.put('/:id', upload.single('file'), soalController.updateSoal);
+router.delete('/:id', soalController.deleteSoal);
 
 module.exports = router;

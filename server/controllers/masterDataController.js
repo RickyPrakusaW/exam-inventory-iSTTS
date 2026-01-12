@@ -19,6 +19,42 @@ const getAllProdi = async (req, res) => {
     }
 };
 
+const createProdi = async (req, res) => {
+    try {
+        const { name, code, fakultas } = req.body;
+        const newProdi = await Prodi.create({ name, code, fakultas });
+        res.status(201).json(newProdi);
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
+
+const updateProdi = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, code, fakultas } = req.body;
+        await Prodi.update({ name, code, fakultas }, { where: { id } });
+        res.json({ message: 'Prodi updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
+
+const deleteProdi = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check for dependencies
+        const matkulCount = await Matkul.count({ where: { prodi_id: id } });
+        if (matkulCount > 0) {
+            return res.status(400).json({ message: 'Cannot delete Prodi with associated Matkuls' });
+        }
+        await Prodi.destroy({ where: { id } });
+        res.json({ message: 'Prodi deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
+
 const getAllMatkul = async (req, res) => {
     try {
         const matkul = await Matkul.findAll({
@@ -37,7 +73,49 @@ const getAllMatkul = async (req, res) => {
     }
 };
 
+const createMatkul = async (req, res) => {
+    try {
+        const { name, code, semester, prodi_id } = req.body;
+        const newMatkul = await Matkul.create({ name, code, semester, prodi_id });
+        res.status(201).json(newMatkul);
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
+
+const updateMatkul = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, code, semester, prodi_id } = req.body;
+        await Matkul.update({ name, code, semester, prodi_id }, { where: { id } });
+        res.json({ message: 'Matkul updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
+
+const deleteMatkul = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check for dependencies
+        const soalCount = await Soal.count({ where: { matkul_id: id } });
+        if (soalCount > 0) {
+            return res.status(400).json({ message: 'Cannot delete Matkul with associated Soals' });
+        }
+        await Matkul.destroy({ where: { id } });
+        res.json({ message: 'Matkul deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     getAllProdi,
-    getAllMatkul
+    createProdi,
+    updateProdi,
+    deleteProdi,
+    getAllMatkul,
+    createMatkul,
+    updateMatkul,
+    deleteMatkul
 };
