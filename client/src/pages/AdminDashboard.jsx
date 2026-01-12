@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     FileText, 
     Users, 
@@ -10,62 +10,72 @@ import {
     ChevronRight,
     Plus,
     UserPlus,
-    FileCheck
+    FileCheck,
+    Loader2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
-    const stats = [
-        { title: 'Total Arsip Soal', value: '1,247', icon: <FileText className="text-blue-600" />, bg: 'bg-blue-50' },
-        { title: 'Mahasiswa Terdaftar', value: '3,456', icon: <Users className="text-green-600" />, bg: 'bg-green-50' },
-        { title: 'Total Unduhan', value: '12,890', icon: <Download className="text-amber-600" />, bg: 'bg-amber-50' },
-        { title: 'Laporan Masuk', value: '23', icon: <AlertCircle className="text-rose-600" />, bg: 'bg-rose-50' },
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalSoal: 0,
+        mahasiswaCount: 0,
+        totalDownloads: 0,
+        laporanCount: 0
+    });
+    const [popularSoals, setPopularSoals] = useState([]);
+    const [recentActivities, setRecentActivities] = useState([]);
+    const [activeNews, setActiveNews] = useState([]);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    navigate('/'); // Redirect if no token
+                    return;
+                }
+
+                const response = await fetch('http://localhost:5000/api/dashboard/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setStats(data.stats);
+                    setPopularSoals(data.popularSoals);
+                    setRecentActivities(data.recentActivities);
+                    // setActiveNews(data.activeNews); // Keep empty if not implemented
+                } else {
+                    console.error('Failed to fetch dashboard data');
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [navigate]);
+
+    const statCards = [
+        { title: 'Total Arsip Soal', value: stats.totalSoal, icon: <FileText className="text-blue-600" />, bg: 'bg-blue-50' },
+        { title: 'Mahasiswa Terdaftar', value: stats.mahasiswaCount, icon: <Users className="text-green-600" />, bg: 'bg-green-50' },
+        { title: 'Total Unduhan', value: stats.totalDownloads, icon: <Download className="text-amber-600" />, bg: 'bg-amber-50' },
+        { title: 'Laporan Masuk', value: stats.laporanCount, icon: <AlertCircle className="text-rose-600" />, bg: 'bg-rose-50' },
     ];
 
-    const activeNews = [
-        { id: 1, title: 'Jadwal UTS 2025 Dipindah', expiry: '28 Maret 2025', color: 'blue' },
-        { id: 2, title: 'Perpanjangan Waktu Upload', expiry: '15 April 2025', color: 'amber' },
-    ];
-
-    const recentActivities = [
-        { id: 1, title: 'Soal UTS Matematika ditambahkan', time: '2 jam yang lalu', type: 'upload' },
-        { id: 2, title: 'Mahasiswa baru terdaftar', time: '5 jam yang lalu', type: 'user' },
-    ];
-
-    const popularSoals = [
-        { 
-            id: 1, 
-            namaMatkul: 'Algoritma dan Pemrograman',
-            kodeMatkul: 'IF101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloads: 456
-        },
-        { 
-            id: 2, 
-            namaMatkul: 'Kalkulus',
-            kodeMatkul: 'MT101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            programStudi: 'S1-Teknik Elektro',
-            fakultas: 'Fakultas Teknik',
-            downloads: 383
-        },
-        {
-            id: 3,
-            namaMatkul: 'Basis Data',
-            kodeMatkul: 'IF201',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloads: 312
-        }
-    ];
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="w-8 h-8 md:w-10 md:h-10 text-rose-500 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 md:space-y-8 pb-12">
@@ -77,7 +87,7 @@ const AdminDashboard = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-                {stats.map((stat, index) => (
+                {statCards.map((stat, index) => (
                     <div key={index} className="bg-white p-4 md:p-6 rounded-xl md:rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 group hover:shadow-md transition-all">
                         <div className={`p-2.5 md:p-4 ${stat.bg} rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform shrink-0`}>
                             <div className="w-5 h-5 md:w-6 md:h-6">
@@ -93,26 +103,35 @@ const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                {/* Berita Aktif */}
-                <section className="bg-white p-5 md:p-8 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 space-y-4 md:space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                            <Bell className="text-rose-500 w-4 h-4 md:w-5 md:h-5" />
-                            <span>Berita Aktif</span>
-                        </h2>
-                    </div>          
-                    <div className="space-y-3 md:space-y-4">
-                        {activeNews.map(news => (
-                            <div key={news.id} className={`p-3 md:p-4 rounded-xl md:rounded-2xl border-l-4 flex items-center justify-between bg-gray-50 ${news.color === 'blue' ? 'border-blue-500' : 'border-amber-500'}`}>
-                                <div className="space-y-1 flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-800 text-xs md:text-sm leading-tight">{news.title}</h3>
-                                    <p className="text-[10px] md:text-[11px] text-gray-400">Berakhir: {news.expiry}</p>
+                {/* Berita Aktif - Static or Empty for now as no backend support */}
+                {activeNews.length > 0 ? (
+                    <section className="bg-white p-5 md:p-8 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 space-y-4 md:space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <Bell className="text-rose-500 w-4 h-4 md:w-5 md:h-5" />
+                                <span>Berita Aktif</span>
+                            </h2>
+                        </div>          
+                        <div className="space-y-3 md:space-y-4">
+                            {activeNews.map((news, idx) => (
+                                <div key={idx} className={`p-3 md:p-4 rounded-xl md:rounded-2xl border-l-4 flex items-center justify-between bg-gray-50 ${'border-blue-500'}`}>
+                                    <div className="space-y-1 flex-1 min-w-0">
+                                        <h3 className="font-bold text-gray-800 text-xs md:text-sm leading-tight">{news.title}</h3>
+                                        {/* <p className="text-[10px] md:text-[11px] text-gray-400">Berakhir: {news.expiry}</p> */}
+                                    </div>
+                                    <ChevronRight className="text-gray-300 w-4 h-4 md:w-[18px] md:h-[18px] shrink-0 ml-2" />
                                 </div>
-                                <ChevronRight className="text-gray-300 w-4 h-4 md:w-[18px] md:h-[18px] shrink-0 ml-2" />
-                            </div>
-                        ))}
-                    </div>
-                </section>
+                            ))}
+                        </div>
+                    </section>
+                ) : (
+                   <section className="bg-white p-5 md:p-8 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 space-y-4 md:space-y-6 flex items-center justify-center min-h-[200px]">
+                        <div className="text-center space-y-2">
+                             <Bell className="text-gray-300 w-10 h-10 mx-auto" />
+                             <p className="text-gray-400 text-sm">Belum ada berita aktif</p>
+                        </div>
+                   </section>
+                )}
 
                 {/* Aktivitas Terbaru */}
                 <section className="bg-white p-5 md:p-8 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 space-y-4 md:space-y-6">
@@ -121,17 +140,19 @@ const AdminDashboard = () => {
                         <span>Aktivitas Terbaru</span>
                     </h2>
                     <div className="space-y-3 md:space-y-4">
-                        {recentActivities.map(activity => (
+                        {recentActivities.length > 0 ? recentActivities.map(activity => (
                             <div key={activity.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl bg-gray-50 group hover:bg-gray-100 transition-colors">
                                 <div className={`p-2 rounded-full shrink-0 ${activity.type === 'upload' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
                                     {activity.type === 'upload' ? <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <UserPlus className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-bold text-gray-800 text-xs md:text-sm leading-tight">{activity.title}</h3>
-                                    <p className="text-[10px] md:text-[11px] text-gray-400 mt-0.5">{activity.time}</p>
+                                    <p className="text-[10px] md:text-[11px] text-gray-400 mt-0.5">{new Date(activity.time).toLocaleString()}</p>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <p className="text-gray-400 text-sm text-center py-4">Belum ada aktivitas terbaru</p>
+                        )}
                     </div>
                 </section>
 
@@ -142,7 +163,7 @@ const AdminDashboard = () => {
                         <span>Soal Populer</span>
                     </h2>
                     <div className="space-y-2">
-                        {popularSoals.map(soal => (
+                        {popularSoals.length > 0 ? popularSoals.map(soal => (
                             <div key={soal.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
                                 <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
                                     <div className="p-2 md:p-3 bg-gray-50 rounded-lg md:rounded-xl shrink-0">
@@ -158,7 +179,7 @@ const AdminDashboard = () => {
                                             <span>•</span>
                                             <span>{soal.jenisUjian}</span>
                                             <span>•</span>
-                                            <span>{soal.semester}</span>
+                                            <span>Semester {soal.semester}</span>
                                             <span>•</span>
                                             <span>{soal.tahunAjaran}</span>
                                         </div>
@@ -168,7 +189,9 @@ const AdminDashboard = () => {
                                     {soal.downloads} unduhan
                                 </span>
                             </div>
-                        ))}
+                        )) : (
+                            <p className="text-gray-400 text-sm text-center py-4">Belum ada soal populer</p>
+                        )}
                     </div>
                 </section>
             </div>

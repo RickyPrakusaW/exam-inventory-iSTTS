@@ -21,11 +21,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'))); // 
 const authRoutes = require('./routes/authRoutes');
 const soalRoutes = require('./routes/soalRoutes');
 const masterDataRoutes = require('./routes/masterDataRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/soal', soalRoutes);
 app.use('/api/master', masterDataRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Test Route
 app.get('/', (req, res) => {
@@ -37,7 +39,7 @@ const startServer = async () => {
     try {
         await sequelize.authenticate();
         console.log('Database connected...');
-        await sequelize.sync({ alter: true }); // Sync models
+        await sequelize.sync(); // Sync models
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
