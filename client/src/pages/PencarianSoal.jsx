@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Bookmark, ThumbsUp, FileText } from 'lucide-react';
 
 const PencarianSoal = () => {
@@ -6,100 +6,67 @@ const PencarianSoal = () => {
     const [selectedJurusan, setSelectedJurusan] = useState('');
     const [selectedType, setSelectedType] = useState('');
 
-    const daftarJurusan = [
-        'S1-Teknik Elektro',
-        'S1-Informatika',
-        'S1-Teknik Industri',
-        'S1-Sistem Informasi Bisnis',
-        'S1-Desain Komunikasi Visual',
-        'S1-Desain Produk',
-        'S1-Informatika (Kelas Malam)',
-        'S1-Desain Komunikasi Visual (Kelas Malam)',
-        'D3-Sistem Informasi',
-        'S2 Teknologi Informasi'
-    ];
+    const [soals, setSoals] = useState([]);
+    const [prodiList, setProdiList] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const hasilPencarian = [
-        {
-            id: 1,
-            namaMatkul: 'Algoritma dan Pemrograman',
-            kodeMatkul: 'IF101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Ahmad Wijaya, S.Kom., M.Kom.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloads: 456,
-            likes: 89
-        },
-        {
-            id: 2,
-            namaMatkul: 'Basis Data',
-            kodeMatkul: 'IF201',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Prof. Dr. Budi Santoso, S.Kom., M.T.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloads: 234,
-            likes: 45
-        },
-        {
-            id: 3,
-            namaMatkul: 'Kalkulus',
-            kodeMatkul: 'MT101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Siti Nurhaliza, S.Si., M.Si.',
-            programStudi: 'S1-Teknik Elektro',
-            fakultas: 'Fakultas Teknik',
-            downloads: 389,
-            likes: 67
-        },
-        {
-            id: 4,
-            namaMatkul: 'Desain Grafis',
-            kodeMatkul: 'DKV101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Ahmad Fauzi, S.Ds., M.Ds.',
-            programStudi: 'S1-Desain Komunikasi Visual',
-            fakultas: 'Fakultas Desain',
-            downloads: 312,
-            likes: 52
-        },
-        {
-            id: 5,
-            namaMatkul: 'Sistem Informasi Manajemen',
-            kodeMatkul: 'SIB201',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Rina Wati, S.Kom., M.M.',
-            programStudi: 'S1-Sistem Informasi Bisnis',
-            fakultas: 'Fakultas Bisnis',
-            downloads: 278,
-            likes: 41
+    const fetchProdi = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/master/prodi');
+            if (response.ok) {
+                const data = await response.json();
+                setProdiList(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch prodi", error);
         }
-    ];
+    };
+
+    const fetchSoals = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/soal');
+            if (response.ok) {
+                const data = await response.json();
+                // Filter only 'Aktif' soals for normal users
+                setSoals(data.filter(s => s.status === 'Aktif'));
+            }
+        } catch (error) {
+            console.error("Failed to fetch soals", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchProdi();
+        fetchSoals();
+    }, []);
 
     // Filter hasil pencarian
-    const filteredResults = hasilPencarian.filter(soal => {
+    const filteredResults = soals.filter(soal => {
         const matchesSearch = searchTerm === '' || 
-            soal.namaMatkul.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            soal.kodeMatkul.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            soal.programStudi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            soal.dosenPengampu.toLowerCase().includes(searchTerm.toLowerCase());
+            soal.namaMatkul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            soal.kodeMatkul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            soal.programStudi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            soal.dosenPengampu?.toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesJurusan = selectedJurusan === '' || soal.programStudi === selectedJurusan;
         const matchesType = selectedType === '' || soal.jenisUjian === selectedType;
         
         return matchesSearch && matchesJurusan && matchesType;
     });
+
+    const handleDownload = (url) => {
+        if (!url) {
+            alert("File URL not found");
+            return;
+        }
+        window.open(url, '_blank');
+    };
+
+    const handleSave = () => {
+        alert("Fitur simpan ke perpustakaan pribadi belum tersedia.");
+    };
 
     return (
         <div className="space-y-6 md:space-y-8 pb-12">
@@ -132,8 +99,8 @@ const PencarianSoal = () => {
                                 onChange={(e) => setSelectedJurusan(e.target.value)}
                             >
                                 <option value="">Semua Jurusan</option>
-                                {daftarJurusan.map(jurusan => (
-                                    <option key={jurusan} value={jurusan}>{jurusan}</option>
+                                {prodiList.map(prodi => (
+                                    <option key={prodi.id} value={prodi.name}>{prodi.name}</option>
                                 ))}
                             </select>
                             <Filter className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4 md:w-[18px] md:h-[18px]" />
@@ -147,6 +114,8 @@ const PencarianSoal = () => {
                                 <option value="">Semua Jenis Ujian</option>
                                 <option value="UTS">UTS</option>
                                 <option value="UAS">UAS</option>
+                                <option value="Kuis">Kuis</option>
+                                <option value="Lainnya">Lainnya</option>
                             </select>
                             <Filter className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4 md:w-[18px] md:h-[18px]" />
                         </div>
@@ -170,9 +139,14 @@ const PencarianSoal = () => {
             <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <h2 className="text-base md:text-lg font-bold text-gray-800">Hasil Pencarian</h2>
-                    <span className="text-xs md:text-sm text-gray-500">{filteredResults.length} hasil ditemukan</span>
+                    <span className="text-xs md:text-sm text-gray-500">
+                        {loading ? 'Memuat...' : `${filteredResults.length} hasil ditemukan`}
+                    </span>
                 </div>
-                {filteredResults.length === 0 ? (
+                
+                {loading ? (
+                     <div className="text-center py-12 text-gray-500">Memuat data soal...</div>
+                ) : filteredResults.length === 0 ? (
                     <div className="bg-white p-8 md:p-12 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm text-center">
                         <FileText className="w-12 h-12 md:w-16 md:h-16 text-gray-300 mx-auto mb-4" />
                         <p className="text-gray-500 text-sm md:text-base">Tidak ada soal yang ditemukan</p>
@@ -219,19 +193,21 @@ const PencarianSoal = () => {
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 md:gap-4 pt-4 border-t border-gray-50">
-                                    <button className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95 flex-shrink-0">
+                                    <button 
+                                        onClick={() => handleDownload(soal.file_url)}
+                                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95 flex-shrink-0"
+                                    >
                                         <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                         <span>Unduh</span>
                                     </button>
-                                    <button className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95 flex-shrink-0">
+                                    <button 
+                                        onClick={handleSave}
+                                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95 flex-shrink-0"
+                                    >
                                         <Bookmark className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                         <span>Simpan</span>
                                     </button>
                                     <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-500 ml-auto md:ml-0">
-                                        <ThumbsUp className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                        <span>{soal.likes}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-500">
                                         <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                         <span>{soal.downloads}</span>
                                     </div>
@@ -246,4 +222,3 @@ const PencarianSoal = () => {
 };
 
 export default PencarianSoal;
-
