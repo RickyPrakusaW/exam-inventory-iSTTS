@@ -234,10 +234,7 @@ const Home = () => {
                                             <span className="text-gray-500">Prodi:</span>
                                             <span className="text-gray-900 font-medium">{soal.programStudi}</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-x-3 gap-y-1">
-                                            <span className="text-gray-500">Dosen:</span>
-                                            <span className="text-gray-900 font-medium">{soal.dosenPengampu}</span>
-                                        </div>
+
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -291,10 +288,7 @@ const Home = () => {
                                             <span className="text-gray-500">Prodi:</span>
                                             <span className="text-gray-900 font-medium">{soal.programStudi}</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-x-3 gap-y-1">
-                                            <span className="text-gray-500">Dosen:</span>
-                                            <span className="text-gray-900 font-medium">{soal.dosenPengampu}</span>
-                                        </div>
+
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 pt-2">

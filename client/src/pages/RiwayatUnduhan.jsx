@@ -108,10 +108,7 @@ const RiwayatUnduhan = () => {
                                             <span className="text-gray-900 font-medium ml-1">{item.fakultas}</span>
                                         </div>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-500">Dosen Pengampu:</span>
-                                        <span className="text-gray-900 font-medium ml-1">{item.dosenPengampu}</span>
-                                    </div>
+
                                     <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs text-gray-400 pt-1">
                                         <span className="flex items-center gap-1">
                                             <Calendar size={14} />

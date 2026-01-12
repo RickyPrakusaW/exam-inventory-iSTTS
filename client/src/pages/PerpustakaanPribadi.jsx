@@ -115,10 +115,7 @@ const PerpustakaanPribadi = () => {
                                             <span className="text-gray-900 font-medium ml-1">{soal.fakultas}</span>
                                         </div>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-500">Dosen Pengampu:</span>
-                                        <span className="text-gray-900 font-medium ml-1">{soal.dosenPengampu}</span>
-                                    </div>
+
                                     <div className="flex items-center gap-2 text-xs text-gray-400 pt-1">
                                         <Calendar size={14} />
                                         <span>Disimpan: {new Date(soal.savedDate).toLocaleDateString()}</span>

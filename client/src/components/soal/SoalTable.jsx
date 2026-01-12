@@ -14,7 +14,7 @@ const SoalTable = ({ soals, onEdit, onDelete }) => {
                             <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Semester</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Tahun Ajaran</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Program Studi</th>
-                            <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Dosen</th>
+
                             <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Unduhan</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
                             <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Aksi</th>
@@ -34,7 +34,7 @@ const SoalTable = ({ soals, onEdit, onDelete }) => {
                                 <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">{soal.semester}</td>
                                 <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">{soal.tahunAjaran}</td>
                                 <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700 max-w-[200px]">{soal.programStudi}</td>
-                                <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700 max-w-[200px]">{soal.dosenPengampu}</td>
+
                                 <td className="px-4 md:px-6 py-3 md:py-4">
                                     <div className="flex items-center gap-1 text-sm text-gray-600">
                                         <Download className="w-3.5 h-3.5" />

@@ -49,8 +49,7 @@ const PencarianSoal = () => {
         const matchesSearch = searchTerm === '' || 
             soal.namaMatkul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             soal.kodeMatkul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            soal.programStudi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            soal.dosenPengampu?.toLowerCase().includes(searchTerm.toLowerCase());
+            soal.programStudi?.toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesJurusan = selectedJurusan === '' || soal.programStudi === selectedJurusan;
         const matchesType = selectedType === '' || soal.jenisUjian === selectedType;
@@ -110,7 +109,7 @@ const PencarianSoal = () => {
                         <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
                         <input
                             type="text"
-                            placeholder="Cari mata kuliah, kode MK, program studi, atau dosen..."
+                            placeholder="Cari mata kuliah, kode MK, atau program studi..."
                             className="w-full pl-10 md:pl-12 pr-4 py-2.5 md:py-4 bg-gray-50 border border-gray-100 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 transition-all outline-none text-sm md:text-base"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -211,10 +210,7 @@ const PencarianSoal = () => {
                                                 <span className="text-gray-900 font-medium ml-1">{soal.fakultas}</span>
                                             </div>
                                         </div>
-                                        <div>
-                                            <span className="text-gray-500">Dosen Pengampu:</span>
-                                            <span className="text-gray-900 font-medium ml-1">{soal.dosenPengampu}</span>
-                                        </div>
+
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 md:gap-4 pt-4 border-t border-gray-50">

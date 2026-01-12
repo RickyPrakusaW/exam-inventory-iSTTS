@@ -42,10 +42,7 @@ const SoalCard = ({ soal, onEdit, onDelete }) => {
                         <span className="text-gray-500">Fakultas:</span>
                         <span className="text-gray-900 font-medium text-right max-w-[60%]">{soal.fakultas}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-500">Dosen Pengampu:</span>
-                        <span className="text-gray-900 font-medium text-right max-w-[60%]">{soal.dosenPengampu}</span>
-                    </div>
+
                     <div className="flex justify-between">
                         <span className="text-gray-500">Unduhan:</span>
                         <div className="flex items-center gap-1 text-gray-900 font-medium">
