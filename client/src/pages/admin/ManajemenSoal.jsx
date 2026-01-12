@@ -73,6 +73,16 @@ const ManajemenSoal = () => {
             // Default uploader_id to 1 (admin) for now
             formData.append('uploader_id', 1); 
             formData.append('status', formDataState.status);
+
+            // [NEW] Append metadata for file naming (server-side)
+            const selectedMatkul = matkuls.find(m => m.id == formDataState.matkul_id);
+            if (selectedMatkul) {
+                formData.append('matkul_name', selectedMatkul.name);
+                formData.append('prodi_name', selectedMatkul.Prodi ? selectedMatkul.Prodi.name : 'Unknown');
+                formData.append('prodi_code', selectedMatkul.Prodi ? selectedMatkul.Prodi.code : 'Unknown');
+                formData.append('semester_num', selectedMatkul.semester);
+            }
+
             if (formDataState.file) {
                 formData.append('file', formDataState.file);
             }
