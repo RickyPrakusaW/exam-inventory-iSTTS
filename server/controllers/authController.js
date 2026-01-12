@@ -4,7 +4,7 @@ const { User, Op } = require('../models');
 
 const register = async (req, res) => {
     try {
-        const { name, email, password, role, nrp } = req.body;
+        const { name, email, password, nrp } = req.body;
 
         // Check if user exists
         const existingUser = await User.findOne({ 
@@ -27,8 +27,8 @@ const register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: role || 'mahasiswa',
-            nrp: nrp || null,
+            role: 'mahasiswa',
+            nrp,
         });
 
         res.status(201).json({ message: 'User registered successfully' });
