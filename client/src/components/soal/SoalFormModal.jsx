@@ -39,10 +39,19 @@ const SoalFormModal = ({ isOpen, onClose, onSubmit, initialData, matkuls }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // Validate file size (10MB)
-        if (soalForm.file && soalForm.file.size > 10 * 1024 * 1024) {
-             showToast('File terlalu besar. Maksimal ukuran file adalah 10 MB.', 'error');
-             return;
+        // Validate file
+        if (soalForm.file) {
+            // Check file type first
+            if (soalForm.file.type !== 'application/pdf') {
+                showToast('Hanya file PDF yang diperbolehkan.', 'error');
+                return;
+            }
+
+            // Then check file size (10MB)
+            if (soalForm.file.size > 10 * 1024 * 1024) {
+                 showToast('File terlalu besar. Maksimal ukuran file adalah 10 MB.', 'error');
+                 return;
+            }
         }
 
         onSubmit(soalForm);
