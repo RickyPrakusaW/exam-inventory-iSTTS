@@ -1,6 +1,7 @@
 const { Soal, Matkul, User, Prodi } = require('../models');
 const { uploadFileToDrive } = require('../utils/googleDriveService');
 const fs = require('fs');
+const path = require('path');
 
 const createSoal = async (req, res) => {
     try {
@@ -173,14 +174,12 @@ const deleteSoal = async (req, res) => {
              try {
                  if (soal.file_url.includes('/uploads/')) {
                      const filename = soal.file_url.split('/uploads/')[1];
-                     // Best guess path. Ideally we should know upload dir.
-                     // I will assume it is in `uploads` folder in root or `public/uploads`. 
-                     // I'll check `uploadMiddleware` later if this is critical, but for now I'll just delete from DB mainly.
-                     // For correct implementation I really should delete the file.
-                     // I'll add a TODO or try to find `uploads` dir.
-                     const path = require('path');
-                     // Assuming 'uploads' is in project root or relative to execution.
-                     // The `list_dir` showed `public` folder.
+                     if (filename) {
+                         const filePath = path.join(__dirname, '../public/uploads', filename);
+                         if (fs.existsSync(filePath)) {
+                             fs.unlinkSync(filePath);
+                         }
+                     }
                  }
              } catch (e) {
                  console.error("Error deleting file:", e);
