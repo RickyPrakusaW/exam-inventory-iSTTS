@@ -80,20 +80,32 @@ const importPdfs = async () => {
                      matkulParts.shift();
                 }
 
+                // Helper to split CamelCase or PascalCase into words
+                const splitCamelCase = (str) => {
+                    return str.replace(/([a-z])([A-Z])/g, '$1 $2');
+                };
+
+                // Apply split to each part (in case some parts are CamelCase)
+                matkulParts = matkulParts.map(part => splitCamelCase(part));
+
                 let matkulName = matkulParts.join(' '); 
                 
                 // Fix common typos
                 const typoMap = {
-                    'MachineLearningg': 'MachineLearning',
-                    'MotionGraphicss': 'MotionGraphics',
-                    'GenerativeArtt': 'GenerativeArt',
-                    'StatistikaTerapann': 'StatistikaTerapan',
-                    'ObjectOrientedAnalysisDanDesignn': 'ObjectOrientedAnalysisDanDesain',
-                    'WebSeviceSOA': 'WebServiceSOA',
+                    'MachineLearningg': 'Machine Learning',
+                    'MotionGraphicss': 'Motion Graphics',
+                    'GenerativeArtt': 'Generative Art',
+                    'StatistikaTerapann': 'Statistika Terapan',
+                    'ObjectOrientedAnalysisDanDesignn': 'Object Oriented Analysis Dan Desain',
+                    'WebSeviceSOA': 'WebService SOA',
                 };
                 
+                // Check if mapped, trying both as-is and with spaces removed (for robustness)
+                const condensedName = matkulName.replace(/ /g, '');
                 if (typoMap[matkulName]) {
                     matkulName = typoMap[matkulName];
+                } else if (typoMap[condensedName]) {
+                    matkulName = typoMap[condensedName];
                 }
 
                 const year = parseInt(yearStartStr);
@@ -114,37 +126,64 @@ const importPdfs = async () => {
                     }
                 });
 
-                // 3. Upload/Copy to Local Storage
-                const sourcePath = path.join(prodiPath, file);
+                // 3. Construct Target Directory and Filename
+                // Folder structure: [Prodi Name]/[School Year (YYYY-YYYY)]/Semester_[Gasal/Genap]/
+                const prodiNameSafe = prodi.name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+                const schoolYear = `${year}-${year + 1}`;
+                const semesterType = semester === 1 ? 'Semester_Gasal' : 'Semester_Genap';
                 
-                // Sanitize filename
-                const cleanName = file.replace(/[^a-zA-Z0-9.]/g, '_');
-                const uniqueName = `${Date.now()}-${cleanName}`;
-                const destPath = path.join(__dirname, '..', 'public', 'uploads', uniqueName);
-
-                // Ensure directory exists (redundant if mkdir run, but safe)
-                if (!fs.existsSync(path.dirname(destPath))) {
-                    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+                const targetDir = path.join(__dirname, '..', 'public', 'uploads', prodiNameSafe, schoolYear, semesterType);
+                
+                if (!fs.existsSync(targetDir)) {
+                    fs.mkdirSync(targetDir, { recursive: true });
                 }
+
+                // Filename: [Type]_[ProdiCode]_[MatkulName(UpperCamelCase)]_[YYYY]_[YYYY+1]_[GENAP/GANJIL].pdf
+                const toUpperCamelCase = (str) => {
+                    return str
+                        .replace(/[^a-zA-Z0-9 ]/g, '')
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join('');
+                };
+
+                const safeMatkulCamel = toUpperCamelCase(matkulName);
+                const semesterSuffix = semester === 1 ? 'GANJIL' : 'GENAP';
+                // Filename Example: UAS_IF_PemrogramanWeb_2024_2025_GENAP.pdf
+                // Note: The original requirement for filename was: [Soal Type]_[Prodi Code]_[Matkul Name]...
+                // existing 'file' is the original filename. We construct a new standardized one.
+                const newFilename = `${type}_${prodiCode}_${safeMatkulCamel}_${year}_${year + 1}_${semesterSuffix}.pdf`;
+                
+                const destPath = path.join(targetDir, newFilename);
+
+                const sourcePath = path.join(prodiPath, file); // Restore sourcePath
 
                 // Copy file
                 fs.copyFileSync(sourcePath, destPath);
 
-                let fileUrl = `http://localhost:5000/uploads/${uniqueName}`;
-                let driveId = 'local-file';
+                // Construct URL relative to public/uploads
+                // We need to serve this. Existing app serves static from public/uploads.
+                // relative path: [Prodi Name]/.../file.pdf
+                // Encode URI components to handle spaces in path safely
+                const relativePath = path.join(prodiNameSafe, schoolYear, semesterType, newFilename).split(path.sep).join('/');
+                const fileUrl = `http://localhost:5000/uploads/${encodeURI(relativePath)}`;
+                const driveId = 'local-file'; // Keeping as placeholder
 
                 try {
                     // Force clean up of duplicates or old versions
-                    // We delete any Soal with this filename to ensure we only have one clean record
-                    // pointing to the correct Matkul and Year.
-                    // NOTE: This resets download counts, which is acceptable for this migration phase.
+                    // We delete any Soal with this filename OR title to ensure we only have one clean record
                     await db.Soal.destroy({
-                        where: { title: file }
+                        where: { 
+                            [Sequelize.Op.or]: [
+                                { title: file },
+                                { title: newFilename }
+                            ]
+                         }
                     });
 
                     console.log('    Creating Database Entry...');
                     await db.Soal.create({
-                        title: file, 
+                        title: newFilename, // Use the new standardized filename
                         type: type,
                         year: year,
                         matkul_id: matkul.id,
