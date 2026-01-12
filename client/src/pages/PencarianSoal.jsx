@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Bookmark, ThumbsUp, FileText } from 'lucide-react';
+import { Search, Filter, Download, Bookmark, ThumbsUp, FileText, Send, CheckSquare, Square, Mail } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirmation } from '../contexts/ConfirmationContext';
 
 const PencarianSoal = () => {
     const { showToast } = useToast();
+    const { confirm } = useConfirmation();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedJurusan, setSelectedJurusan] = useState('');
     const [selectedType, setSelectedType] = useState('');
+    
+    // Selection Mode State
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
 
     const [soals, setSoals] = useState([]);
     const [prodiList, setProdiList] = useState([]);
@@ -92,6 +98,72 @@ const PencarianSoal = () => {
         }
     };
 
+    const toggleSelection = (id) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const toggleSelectionMode = () => {
+        if (selectionMode) {
+            setSelectionMode(false);
+            setSelectedIds(new Set());
+        } else {
+            setSelectionMode(true);
+        }
+    };
+
+    const handleEmailFiles = async () => {
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+            showToast('Silakan login terlebih dahulu', 'warning');
+            return;
+        }
+
+        if (selectedIds.size === 0) {
+            showToast('Pilih minimal satu file', 'warning');
+            return;
+        }
+
+        const isConfirmed = await confirm({
+            title: 'Kirim Email',
+            message: `Apakah Anda yakin ingin mengirim ${selectedIds.size} file terpilih ke email Anda?`,
+            confirmText: 'Kirim',
+            type: 'info' // Using info or default
+        });
+
+        if (!isConfirmed) return;
+
+        try {
+            showToast('Sedang mengirim email...', 'info');
+            const response = await fetch('http://localhost:5000/api/soal/email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    userId, 
+                    soalIds: Array.from(selectedIds) 
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast('Email berhasil dikirim!', 'success');
+                setSelectionMode(false);
+                setSelectedIds(new Set());
+            } else {
+                showToast(data.message || 'Gagal mengirim email', 'error');
+            }
+        } catch (error) {
+            console.error("Failed to send email", error);
+            showToast('Terjadi kesalahan saat mengirim email', 'error');
+        }
+    };
+
     return (
         <div className="space-y-6 md:space-y-8 pb-12">
             <div className="space-y-2">
@@ -156,6 +228,29 @@ const PencarianSoal = () => {
                             Reset Filter
                         </button>
                     )}
+                    
+                    <div className="flex-1 sm:flex-none flex gap-2">
+                        <button
+                            onClick={toggleSelectionMode}
+                            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-xl md:rounded-2xl transition-all active:scale-95 text-sm md:text-base font-medium ${
+                                selectionMode 
+                                ? 'bg-gray-800 text-white hover:bg-gray-900' 
+                                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                            {selectionMode ? 'Batal Pilih' : 'Pilih File'}
+                        </button>
+                        
+                        {selectionMode && selectedIds.size > 0 && (
+                            <button
+                                onClick={handleEmailFiles}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-rose-600 text-white hover:bg-rose-700 rounded-xl md:rounded-2xl transition-all active:scale-95 text-sm md:text-base font-bold shadow-lg shadow-rose-200"
+                            >
+                                <Mail size={18} />
+                                <span>Kirim Email ({selectedIds.size})</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -178,21 +273,39 @@ const PencarianSoal = () => {
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {filteredResults.map(soal => (
-                            <div key={soal.id} className="bg-white p-4 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                            <div key={soal.id} 
+                                className={`bg-white p-4 md:p-6 rounded-xl md:rounded-2xl border transition-all ${
+                                    selectionMode && selectedIds.has(soal.id)
+                                    ? 'border-rose-500 ring-1 ring-rose-500 shadow-md bg-rose-50/10'
+                                    : 'border-gray-100 shadow-sm hover:shadow-md'
+                                }`}
+                                onClick={() => selectionMode && toggleSelection(soal.id)}
+                            >
                                 <div className="mb-4 space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-gray-900 text-base md:text-lg leading-tight mb-1">
-                                                {soal.namaMatkul}
-                                            </h3>
-                                            <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-500 mb-2">
-                                                <span className="font-medium text-rose-600">{soal.kodeMatkul}</span>
-                                                <span>•</span>
-                                                <span>{soal.jenisUjian}</span>
-                                                <span>•</span>
-                                                <span>{soal.semester}</span>
-                                                <span>•</span>
-                                                <span>{soal.tahunAjaran}</span>
+                                        <div className="flex-1 flex gap-3">
+                                            {selectionMode && (
+                                                <div className="pt-1">
+                                                    {selectedIds.has(soal.id) ? (
+                                                        <CheckSquare className="text-rose-600 w-5 h-5" />
+                                                    ) : (
+                                                        <Square className="text-gray-300 w-5 h-5" />
+                                                    )}
+                                                </div>
+                                            )}
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-base md:text-lg leading-tight mb-1">
+                                                    {soal.namaMatkul}
+                                                </h3>
+                                                <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-500 mb-2">
+                                                    <span className="font-medium text-rose-600">{soal.kodeMatkul}</span>
+                                                    <span>•</span>
+                                                    <span>{soal.jenisUjian}</span>
+                                                    <span>•</span>
+                                                    <span>{soal.semester}</span>
+                                                    <span>•</span>
+                                                    <span>{soal.tahunAjaran}</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <span className="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-bold rounded-full whitespace-nowrap">

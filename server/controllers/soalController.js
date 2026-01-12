@@ -1,5 +1,6 @@
 const { Soal, Matkul, User, Prodi } = require('../models');
 const { uploadFileToDrive } = require('../utils/googleDriveService');
+const { sendEmail } = require('../utils/emailService');
 const fs = require('fs');
 const path = require('path');
 // [NEW] Helper for cleaning up empty folders
@@ -271,9 +272,95 @@ const deleteSoal = async (req, res) => {
     }
 };
 
+const emailSoals = async (req, res) => {
+    try {
+        const { userId, soalIds } = req.body;
+
+        if (!userId || !soalIds || !Array.isArray(soalIds) || soalIds.length === 0) {
+            return res.status(400).json({ message: 'User ID and selected Soals are required.' });
+        }
+
+        const user = await User.findByPk(userId);
+        if (!user || !user.email) {
+             return res.status(404).json({ message: 'User not found or no email registered.' });
+        }
+
+        const soals = await Soal.findAll({
+            where: {
+                id: soalIds
+            }
+        });
+
+        if (soals.length === 0) {
+             return res.status(404).json({ message: 'No soals found.' });
+        }
+
+        const attachments = [];
+        const missingFiles = [];
+
+        for (const soal of soals) {
+            if (soal.file_url && soal.file_url.includes('/uploads/')) {
+                 const uploadsPath = path.join(__dirname, '../public');
+                 // file_url is http://.../uploads/path/to/file.pdf
+                 // extract relative path from url
+                 try {
+                     const urlPath = new URL(soal.file_url).pathname; // /uploads/...
+                     const filePath = path.join(uploadsPath, urlPath); // public/uploads/...
+                     
+                     if (fs.existsSync(filePath)) {
+                         attachments.push({
+                             filename: path.basename(filePath),
+                             path: filePath
+                         });
+                     } else {
+                         missingFiles.push(soal.title);
+                     }
+                 } catch (e) {
+                     console.error("Path parsing error", e);
+                     missingFiles.push(soal.title);
+                 }
+            } else {
+                 missingFiles.push(soal.title);
+            }
+        }
+
+        if (attachments.length === 0) {
+            return res.status(400).json({ message: 'No valid files found to send.' });
+        }
+
+        const subject = `File Soal Pilihan Anda - Exam Inventory`;
+        let html = `<h3>Halo ${user.name},</h3>
+        <p>Berikut adalah file soal yang Anda pilih dari Exam Inventory:</p>
+        <ul>
+            ${soals.map(s => `<li>${s.title}</li>`).join('')}
+        </ul>
+        <p>Semoga bermanfaat!</p>
+        <br>
+        <p>Salam,<br>Tim Exam Inventory</p>`;
+
+        if (missingFiles.length > 0) {
+            html += `<p style="color: red;">Catatan: Beberapa file berikut tidak dapat ditemukan: ${missingFiles.join(', ')}</p>`;
+        }
+
+        await sendEmail(user.email, subject, html, attachments);
+
+        res.json({ 
+            message: `Email sent successfully to ${user.email}`, 
+            sentCount: attachments.length,
+            missingCount: missingFiles.length 
+        });
+
+    } catch (error) {
+        console.error("Email error:", error);
+        res.status(500).json({ message: 'Failed to send email', error: error.message });
+    }
+};
+
 module.exports = {
     createSoal,
     getAllSoal,
     updateSoal,
-    deleteSoal
+    updateSoal,
+    deleteSoal,
+    emailSoals
 };
