@@ -6,6 +6,10 @@ const seedAdmin = async () => {
         await sequelize.authenticate();
         console.log('Database connected...');
 
+        // Ensure tables exist
+        await sequelize.sync({ alter: true });
+        console.log('Database synced...');
+
         const email = 'admin@istts.ac.id';
         const password = 'admin123'; // Default password
 
