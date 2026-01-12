@@ -1,76 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Search, Edit, Trash2, Download, Filter, Plus } from 'lucide-react';
 
 const ManajemenSoal = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
-    const soals = [
-        {
-            id: 1,
-            namaMatkul: 'Algoritma dan Pemrograman',
-            kodeMatkul: 'IF101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Ahmad Wijaya, S.Kom., M.Kom.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloads: 456,
-            status: 'Aktif'
-        },
-        {
-            id: 2,
-            namaMatkul: 'Basis Data',
-            kodeMatkul: 'IF201',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Prof. Dr. Budi Santoso, S.Kom., M.T.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloads: 234,
-            status: 'Aktif'
-        },
-        {
-            id: 3,
-            namaMatkul: 'Kalkulus',
-            kodeMatkul: 'MT101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Siti Nurhaliza, S.Si., M.Si.',
-            programStudi: 'S1-Teknik Elektro',
-            fakultas: 'Fakultas Teknik',
-            downloads: 389,
-            status: 'Aktif'
-        },
-        {
-            id: 4,
-            namaMatkul: 'Desain Grafis',
-            kodeMatkul: 'DKV101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Ahmad Fauzi, S.Ds., M.Ds.',
-            programStudi: 'S1-Desain Komunikasi Visual',
-            fakultas: 'Fakultas Desain',
-            downloads: 312,
-            status: 'Aktif'
-        },
-        {
-            id: 5,
-            namaMatkul: 'Sistem Informasi Manajemen',
-            kodeMatkul: 'SIB201',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Rina Wati, S.Kom., M.M.',
-            programStudi: 'S1-Sistem Informasi Bisnis',
-            fakultas: 'Fakultas Bisnis',
-            downloads: 278,
-            status: 'Nonaktif'
-        }
-    ];
+    const [soals, setSoals] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSoals = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/soal');
+                if (response.ok) {
+                    const data = await response.json();
+                    setSoals(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch soals:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSoals();
+    }, []);
 
     return (
         <div className="space-y-6 md:space-y-8 pb-12">

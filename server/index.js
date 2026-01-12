@@ -8,16 +8,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const path = require('path');
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const soalRoutes = require('./routes/soalRoutes');
+// Serve static files
+app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'))); // Direct access if needed, or via public
+
 const authRoutes = require('./routes/authRoutes');
+const soalRoutes = require('./routes/soalRoutes');
+const masterDataRoutes = require('./routes/masterDataRoutes');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/soal', soalRoutes);
+app.use('/api/master', masterDataRoutes);
 
 // Test Route
 app.get('/', (req, res) => {

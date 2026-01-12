@@ -12,6 +12,15 @@ const Prodi = sequelize.define('Prodi', {
         allowNull: false,
         unique: true,
     },
+    code: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+    },
+    fakultas: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
 });
 
 module.exports = Prodi;

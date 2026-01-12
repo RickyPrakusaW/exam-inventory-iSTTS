@@ -11,6 +11,14 @@ const Matkul = sequelize.define('Matkul', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    code: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    semester: {
+        type: DataTypes.INTEGER, // e.g., 1, 2, 3...
+        allowNull: true,
+    },
     // prodi_id will be added via association
 });
 

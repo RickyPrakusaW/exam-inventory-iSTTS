@@ -1,13 +1,15 @@
 const multer = require('multer');
 const path = require('path');
 
-// Store files temporarily in a 'uploads' directory before sending to Drive
+// Store files in 'public/uploads' directory
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, 'public/uploads/');
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
+        // Sanitize filename or use timestamp to avoid conflicts, but keep extension
+        const cleanName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
+        cb(null, `${Date.now()}-${cleanName}`);
     },
 });
 

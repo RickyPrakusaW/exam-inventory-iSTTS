@@ -35,6 +35,10 @@ const Soal = sequelize.define('Soal', {
         type: DataTypes.INTEGER,
         defaultValue: 0,
     },
+    status: {
+        type: DataTypes.ENUM('Aktif', 'Nonaktif'),
+        defaultValue: 'Aktif',
+    },
     // matkul_id, uploader_id added via association
 });
 

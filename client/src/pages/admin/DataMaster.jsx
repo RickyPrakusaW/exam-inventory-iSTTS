@@ -1,20 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Plus, Edit, Trash2, Building2, BookOpen, Users } from 'lucide-react';
 
 const DataMaster = () => {
     const [activeTab, setActiveTab] = useState('prodi');
 
-    const prodi = [
-        { id: 1, name: 'Teknik Informatika', code: 'TI', jumlahMatkul: 24, jumlahMahasiswa: 1234 },
-        { id: 2, name: 'Teknik Sipil', code: 'TS', jumlahMatkul: 18, jumlahMahasiswa: 856 },
-        { id: 3, name: 'Teknik Industri', code: 'TIN', jumlahMatkul: 20, jumlahMahasiswa: 945 }
-    ];
+    const [prodi, setProdi] = useState([]);
+    const [matkul, setMatkul] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const matkul = [
-        { id: 1, name: 'Algoritma dan Pemrograman', code: 'ALPRO', prodi: 'Teknik Informatika', jumlahSoal: 45 },
-        { id: 2, name: 'Basis Data', code: 'BASDAT', prodi: 'Teknik Informatika', jumlahSoal: 32 },
-        { id: 3, name: 'Kalkulus', code: 'KALK', prodi: 'Teknik Sipil', jumlahSoal: 28 }
-    ];
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [prodiRes, matkulRes] = await Promise.all([
+                    fetch('http://localhost:5000/api/master/prodi'),
+                    fetch('http://localhost:5000/api/master/matkul')
+                ]);
+
+                if (prodiRes.ok) {
+                    const data = await prodiRes.json();
+                    setProdi(data);
+                }
+                
+                if (matkulRes.ok) {
+                    const data = await matkulRes.json();
+                    // Map matkul data to match frontend requirements if needed, mainly 'prodi' name
+                    const formattedMatkul = data.map(m => ({
+                        ...m,
+                        prodi: m.Prodi ? m.Prodi.name : 'Unknown',
+                        jumlahSoal: m.dataValues ? m.dataValues.jumlahSoal : m.jumlahSoal // Sequelize aggregate might be in dataValues or direct
+                    }));
+                    setMatkul(formattedMatkul);
+                }
+            } catch (error) {
+                console.error('Failed to fetch master data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     return (
         <div className="space-y-6 md:space-y-8 pb-12">
