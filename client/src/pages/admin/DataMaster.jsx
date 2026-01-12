@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Plus, Edit, Trash2, Building2, BookOpen, Users } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 
 const DataMaster = () => {
+    const { showToast } = useToast();
+    const { confirm } = useConfirmation();
     const [activeTab, setActiveTab] = useState('prodi');
 
     const [prodi, setProdi] = useState([]);
@@ -105,16 +109,23 @@ const DataMaster = () => {
                 handleCloseModal();
                 fetchData();
             } else {
-                alert('Failed to save data');
+                showToast('Failed to save data', 'error');
             }
         } catch (error) {
             console.error('Error saving data:', error);
-            alert('Error saving data');
+            showToast('Error saving data', 'error');
         }
     };
 
     const handleDelete = async (id, type) => {
-        if (!window.confirm('Are you sure you want to delete this item?')) return;
+        const isConfirmed = await confirm({
+            title: `Hapus ${type === 'prodi' ? 'Program Studi' : 'Mata Kuliah'}`,
+            message: `Apakah Anda yakin ingin menghapus data ${type === 'prodi' ? 'program studi' : 'mata kuliah'} ini? Tindakan ini tidak dapat dibatalkan.`,
+            confirmText: 'Hapus',
+            type: 'danger'
+        });
+
+        if (!isConfirmed) return;
 
         const endpoint = type === 'prodi' ? 'http://localhost:5000/api/master/prodi' : 'http://localhost:5000/api/master/matkul';
         try {
@@ -123,11 +134,11 @@ const DataMaster = () => {
                 fetchData();
             } else {
                 const data = await response.json();
-                alert(data.message || 'Failed to delete data');
+                showToast(data.message || 'Failed to delete data', 'error');
             }
         } catch (error) {
             console.error('Error deleting data:', error);
-            alert('Error deleting data');
+            showToast('Error deleting data', 'error');
         }
     };
 

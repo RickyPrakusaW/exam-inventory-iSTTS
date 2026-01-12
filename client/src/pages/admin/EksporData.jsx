@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Download, FileSpreadsheet, FileText, Calendar, Filter, Database } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 
 const EksporData = () => {
+    const { showToast } = useToast();
     const [selectedType, setSelectedType] = useState('soal');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
@@ -42,7 +44,7 @@ const EksporData = () => {
 
     const handleExport = () => {
         // Simulasi export
-        alert(`Mengekspor data ${exportTypes.find(t => t.id === selectedType)?.name}...`);
+        showToast(`Mengekspor data ${exportTypes.find(t => t.id === selectedType)?.name}...`, 'info');
     };
 
     return (

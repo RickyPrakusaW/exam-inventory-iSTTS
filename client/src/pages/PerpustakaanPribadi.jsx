@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Download, Trash2, Calendar } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirmation } from '../contexts/ConfirmationContext';
 
 const PerpustakaanPribadi = () => {
+    const { showToast } = useToast();
+    const { confirm } = useConfirmation();
     const [savedSoals, setSavedSoals] = useState([]);
     const [loading, setLoading] = useState(true);
     const userId = localStorage.getItem('userId');
@@ -30,7 +34,15 @@ const PerpustakaanPribadi = () => {
     }, [userId]);
 
     const handleRemove = async (soalId) => {
-        if (!confirm('Hapus soal dari perpustakaan?')) return;
+        const isConfirmed = await confirm({
+            title: 'Hapus Soal',
+            message: 'Apakah Anda yakin ingin menghapus soal ini dari perpustakaan pribadi?',
+            confirmText: 'Hapus',
+            type: 'danger'
+        });
+
+        if (!isConfirmed) return;
+
         try {
             const response = await fetch(`http://localhost:5000/api/library/${userId}/${soalId}`, {
                 method: 'DELETE'
@@ -38,7 +50,7 @@ const PerpustakaanPribadi = () => {
             if (response.ok) {
                 setSavedSoals(prev => prev.filter(s => s.id !== soalId));
             } else {
-                alert('Gagal menghapus');
+                showToast('Gagal menghapus', 'error');
             }
         } catch (error) {
             console.error('Error removing soal:', error);
@@ -47,7 +59,7 @@ const PerpustakaanPribadi = () => {
 
     const handleDownload = (url) => {
         if (url) window.open(url, '_blank');
-        else alert('File URL not found');
+        else showToast('File URL not found', 'error');
     };
 
     if (loading) return <div className="text-center py-12 text-gray-500">Memuat perpustakaan...</div>;

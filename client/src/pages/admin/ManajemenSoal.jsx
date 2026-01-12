@@ -5,8 +5,12 @@ import SearchInput from '../../components/SearchInput';
 import SoalCard from '../../components/soal/SoalCard';
 import SoalTable from '../../components/soal/SoalTable';
 import SoalFormModal from '../../components/soal/SoalFormModal';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 
 const ManajemenSoal = () => {
+    const { showToast } = useToast();
+    const { confirm } = useConfirmation();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('Semua Status');
 
@@ -89,22 +93,30 @@ const ManajemenSoal = () => {
                 fetchSoals();
             } else {
                 const err = await response.json();
-                alert(err.message || 'Failed to save soal');
+                showToast(err.message || 'Failed to save soal', 'error');
             }
         } catch (error) {
             console.error('Error saving soal:', error);
-            alert('Error saving soal');
+            showToast('Error saving soal', 'error');
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this soal?')) return;
+        const isConfirmed = await confirm({
+            title: 'Hapus Soal',
+            message: 'Apakah Anda yakin ingin menghapus arsip soal ini secara permanen?',
+            confirmText: 'Hapus',
+            type: 'danger'
+        });
+
+        if (!isConfirmed) return;
+
         try {
             const response = await fetch(`http://localhost:5000/api/soal/${id}`, { method: 'DELETE' });
             if (response.ok) {
                 fetchSoals();
             } else {
-                alert('Failed to delete soal');
+                showToast('Failed to delete soal', 'error');
             }
         } catch (error) {
             console.error('Error deleting soal:', error);

@@ -19,42 +19,49 @@ import RiwayatUnduhan from './pages/RiwayatUnduhan';
 import ProgresBelajar from './pages/ProgresBelajar';
 import NotFound from './pages/NotFound';
 
+import { ToastProvider } from './contexts/ToastContext';
+import { ConfirmationProvider } from './contexts/ConfirmationContext';
+
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-        <Routes>
-          <Route path="/" element={<Login />} />
-          
-          {/* User Routes protected for 'user' role */}
-          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
-            <Route element={<UserLayout />}>
-              <Route path="/home" element={<Home />} />
-              <Route path="/news" element={<InformasiBerita />} />
-              <Route path="/search" element={<PencarianSoal />} />
-              <Route path="/library" element={<PerpustakaanPribadi />} />
-              <Route path="/history" element={<RiwayatUnduhan />} />
-              <Route path="/progress" element={<ProgresBelajar />} />
-            </Route>
-          </Route>
+    <ToastProvider>
+      <ConfirmationProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+            <Routes>
+              <Route path="/" element={<Login />} />
+              
+              {/* User Routes protected for 'user' role */}
+              <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+                <Route element={<UserLayout />}>
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/news" element={<InformasiBerita />} />
+                  <Route path="/search" element={<PencarianSoal />} />
+                  <Route path="/library" element={<PerpustakaanPribadi />} />
+                  <Route path="/history" element={<RiwayatUnduhan />} />
+                  <Route path="/progress" element={<ProgresBelajar />} />
+                </Route>
+              </Route>
 
-          {/* Admin Routes protected for 'admin' role */}
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route element={<AdminLayout />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/soal" element={<ManajemenSoal />} />
-              <Route path="/admin/master" element={<DataMaster />} />
-              <Route path="/admin/laporan" element={<LaporanMahasiswa />} />
-              <Route path="/admin/berita" element={<ManajemenBerita />} />
-              <Route path="/admin/ekspor" element={<EksporData />} />
-              <Route path="/admin/profile" element={<GantiUsernamePassword />} />
-            </Route>
-          </Route>
+              {/* Admin Routes protected for 'admin' role */}
+              <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+                <Route element={<AdminLayout />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/soal" element={<ManajemenSoal />} />
+                  <Route path="/admin/master" element={<DataMaster />} />
+                  <Route path="/admin/laporan" element={<LaporanMahasiswa />} />
+                  <Route path="/admin/berita" element={<ManajemenBerita />} />
+                  <Route path="/admin/ekspor" element={<EksporData />} />
+                  <Route path="/admin/profile" element={<GantiUsernamePassword />} />
+                </Route>
+              </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
-    </Router>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </Router>
+      </ConfirmationProvider>
+    </ToastProvider>
   );
 }
 

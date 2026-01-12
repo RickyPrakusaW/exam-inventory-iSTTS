@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Bookmark, ThumbsUp, FileText } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 const PencarianSoal = () => {
+    const { showToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedJurusan, setSelectedJurusan] = useState('');
     const [selectedType, setSelectedType] = useState('');
@@ -58,7 +60,7 @@ const PencarianSoal = () => {
 
     const handleDownload = (url) => {
         if (!url) {
-            alert("File URL not found");
+            showToast("File URL not found", "error");
             return;
         }
         window.open(url, '_blank');
@@ -67,7 +69,7 @@ const PencarianSoal = () => {
     const handleSave = async (soalId) => {
         const userId = localStorage.getItem('userId');
         if (!userId) {
-            alert('Silakan login terlebih dahulu');
+            showToast('Silakan login terlebih dahulu', 'warning');
             return;
         }
 
@@ -81,13 +83,13 @@ const PencarianSoal = () => {
             const data = await response.json();
             
             if (response.ok) {
-                alert('Berhasil disimpan ke perpustakaan pribadi');
+                showToast('Berhasil disimpan ke perpustakaan pribadi', 'success');
             } else {
-                alert(data.message || 'Gagal menyimpan');
+                showToast(data.message || 'Gagal menyimpan', 'error');
             }
         } catch (error) {
             console.error("Failed to save soal", error);
-            alert("Terjadi kesalahan saat menyimpan");
+            showToast("Terjadi kesalahan saat menyimpan", 'error');
         }
     };
 
