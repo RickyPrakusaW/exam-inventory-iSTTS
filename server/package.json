@@ -17,8 +17,7 @@
     "googleapis": "^166.0.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "pg": "^8.16.3",
-    "pg-hstore": "^2.3.4",
+    "mysql2": "^3.16.0",
     "sequelize": "^6.37.7"
   }
 }
