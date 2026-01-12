@@ -82,10 +82,10 @@ export const apiLogin = async (identifier, password) => {
             return {
                 success: true,
                 data: {
-                    nrp: data.nrp || data.nim || data.username,
-                    role: data.role || determineRole(data), // Tentukan role dari data API
-                    name: data.name || data.nama || data.full_name,
-                    email: data.email || data.email_address,
+                    nrp: data.user?.nrp || data.nrp || data.nim || data.username,
+                    role: data.user?.role || data.role || determineRole(data), // Tentukan role dari data API
+                    name: data.user?.name || data.name || data.nama || data.full_name,
+                    email: data.user?.email || data.email || data.email_address,
                     token: data.token || data.access_token, // Jika API mengembalikan token
                     refreshToken: data.refresh_token, // Jika ada refresh token
                     // Tambahkan field lain sesuai response API
