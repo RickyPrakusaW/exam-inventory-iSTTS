@@ -12,7 +12,8 @@ const getLibrary = async (req, res) => {
                     model: Matkul,
                     include: [Prodi]
                 }, {
-                    model: User, // For dosenPengampu name if stored in User
+                    model: User,
+                    as: 'Uploader',
                     attributes: ['name']
                 }]
             }]
@@ -28,7 +29,7 @@ const getLibrary = async (req, res) => {
             jenisUjian: soal.type,
             semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown',
             tahunAjaran: `${soal.year}/${soal.year + 1}`,
-            dosenPengampu: soal.User ? soal.User.name : 'Unknown', // Uploader as dosen? Or maybe we rely on what Soal table has
+            dosenPengampu: soal.Uploader ? soal.Uploader.name : 'Unknown',
             programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
             fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
             downloads: soal.download_count,

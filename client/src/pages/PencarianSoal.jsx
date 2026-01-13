@@ -38,7 +38,12 @@ const PencarianSoal = () => {
 
     const fetchSoals = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/soal');
+            const userId = localStorage.getItem('userId');
+            const url = userId 
+                ? `http://localhost:5000/api/soal?userId=${userId}` 
+                : 'http://localhost:5000/api/soal';
+            
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 // Filter only 'Aktif' soals for normal users
@@ -68,6 +73,38 @@ const PencarianSoal = () => {
             console.error("Failed to fetch saved soals", error);
         }
     };
+
+    // [NEW] Sync savedSoals state with fetched soals if available
+    useEffect(() => {
+        if (soals.length > 0) {
+            const newSaved = new Set(savedSoals);
+            soals.forEach(s => {
+                if (s.isSaved) newSaved.add(s.id);
+            });
+            // Only update if size differs to avoid loop, 
+            // though strictly we should compare contents. 
+            // Simplified: we trust the backend 'isSaved' more.
+            // Actually, let's just use the 'savedSoals' set as the source of truth for UI
+            // and initialize it from both fetchSavedSoals and fetchSoals (if needed).
+            // But since we fetch all saved soals separately, that should be enough?
+            // The issue is likely that the separate fetch might fail or be slow.
+            // Let's rely on the separate fetch primarily, but 'isSaved' helps initial load?
+            // The User reported buttons not lighting up.
+            
+            // BETTER APPROACH:
+            // Use the 'isSaved' from 'soals' to populate 'savedSoals' initial state if 'savedSoals' is empty?
+            // Or just update 'savedSoals' whenever 'soals' changes?
+             const initialSaved = new Set(savedSoals);
+             let changed = false;
+             soals.forEach(s => {
+                 if (s.isSaved && !initialSaved.has(s.id)) {
+                     initialSaved.add(s.id);
+                     changed = true;
+                 }
+             });
+             if (changed) setSavedSoals(initialSaved);
+        }
+    }, [soals]);
 
     useEffect(() => {
         fetchProdi();

@@ -1,4 +1,4 @@
-const { Soal, Matkul, User, Prodi, DownloadHistory } = require('../models');
+const { Soal, Matkul, User, Prodi, DownloadHistory, UserSavedSoal } = require('../models');
 const { uploadFileToDrive } = require('../utils/googleDriveService');
 const { sendEmail } = require('../utils/emailService');
 const fs = require('fs');
@@ -68,6 +68,8 @@ const createSoal = async (req, res) => {
 
 const getAllSoal = async (req, res) => {
     try {
+        const { userId } = req.query; // Get userId from query params
+
         const soals = await Soal.findAll({
             include: [
                 { 
@@ -75,9 +77,19 @@ const getAllSoal = async (req, res) => {
                     attributes: ['name', 'code', 'semester'],
                     include: [{ model: Prodi, attributes: ['name', 'fakultas'] }]
                 },
-                { model: User, attributes: ['name'] }
+                { model: User, as: 'Uploader', attributes: ['name'] }
             ]
         });
+
+        // If userId is present, get the list of saved soals for this user
+        let savedSoalIds = new Set();
+        if (userId) {
+            const saved = await UserSavedSoal.findAll({
+                where: { user_id: userId },
+                attributes: ['soal_id']
+            });
+            savedSoalIds = new Set(saved.map(s => s.soal_id));
+        }
 
         // Format data to match frontend expectation
         const formattedSoals = soals.map(soal => ({
@@ -89,17 +101,19 @@ const getAllSoal = async (req, res) => {
             jenisUjian: soal.type,
             semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown', // Derive generic semester type
             tahunAjaran: `${soal.year}/${soal.year + 1}`, // Logic assumption
-            dosenPengampu: soal.User ? soal.User.name : 'Unknown',
+            dosenPengampu: soal.Uploader ? soal.Uploader.name : 'Unknown',
             programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
             fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
             downloads: soal.download_count,
             status: soal.status,
-            file_url: soal.file_url
+            file_url: soal.file_url,
+            isSaved: savedSoalIds.has(soal.id) // Add isSaved flag
         }));
 
         res.json(formattedSoals);
     } catch (error) {
         console.error(error);
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
 };
 
@@ -402,7 +416,7 @@ const getDownloadHistory = async (req, res) => {
                             model: Matkul,
                             include: [{ model: Prodi }]
                         },
-                        { model: User, attributes: ['name'] }
+                        { model: User, as: 'Uploader', attributes: ['name'] }
                     ]
                 }
             ],
@@ -420,7 +434,7 @@ const getDownloadHistory = async (req, res) => {
                 jenisUjian: soal.type,
                 semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown',
                 tahunAjaran: `${soal.year}/${soal.year + 1}`,
-                dosenPengampu: soal.User ? soal.User.name : 'Unknown',
+                dosenPengampu: soal.Uploader ? soal.Uploader.name : 'Unknown',
                 programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
                 fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
                 downloadDate: new Date(h.downloaded_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -447,7 +461,7 @@ const getPopularSoals = async (req, res) => {
                     attributes: ['name', 'code', 'semester'],
                     include: [{ model: Prodi, attributes: ['name', 'fakultas'] }]
                 },
-                { model: User, attributes: ['name'] }
+                { model: User, as: 'Uploader', attributes: ['name'] }
             ]
         });
 
@@ -458,7 +472,7 @@ const getPopularSoals = async (req, res) => {
             jenisUjian: soal.type,
             semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown',
             tahunAjaran: `${soal.year}/${soal.year + 1}`,
-            dosenPengampu: soal.User ? soal.User.name : 'Unknown',
+            dosenPengampu: soal.Uploader ? soal.Uploader.name : 'Unknown',
             programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
             fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
             likes: soal.upvote_count,
@@ -484,7 +498,7 @@ const getRecentSoals = async (req, res) => {
                     attributes: ['name', 'code', 'semester'],
                     include: [{ model: Prodi, attributes: ['name', 'fakultas'] }]
                 },
-                { model: User, attributes: ['name'] }
+                { model: User, as: 'Uploader', attributes: ['name'] }
             ]
         });
 
@@ -495,7 +509,7 @@ const getRecentSoals = async (req, res) => {
             jenisUjian: soal.type,
             semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown',
             tahunAjaran: `${soal.year}/${soal.year + 1}`,
-            dosenPengampu: soal.User ? soal.User.name : 'Unknown',
+            dosenPengampu: soal.Uploader ? soal.Uploader.name : 'Unknown',
             programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
             fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
             isNew: true, // Since it's recent
