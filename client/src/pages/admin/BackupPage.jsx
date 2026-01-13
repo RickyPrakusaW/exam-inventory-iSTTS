@@ -196,7 +196,7 @@ const BackupPage = () => {
                                                     {new Date(file.createdTime).toLocaleString()}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-gray-500">
-                                                    {(parseInt(file.size) / (1024 * 1024)).toFixed(2)} MB
+                                                    {file.size && parseInt(file.size) > 0 ? (parseInt(file.size) / (1024 * 1024)).toFixed(2) + ' MB' : '-'}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button

@@ -3,14 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
 const AdmZip = require('adm-zip');
-const { Sequelize } = require('sequelize');
-// Import models dynamically or manually if needed
-// const db = require('../models'); 
 
-// Placeholder for Token Storage - In a real app, use a DB table. Use a simple file for now as per plan constraints/simplicity.
+// Placeholder for Token Storage
 const TOKEN_PATH = path.join(__dirname, '../config/google_token.json');
-
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+const SCOPES = ['https://www.googleapis.com/auth/drive']; // Need full drive access to manage folders/files easier or drive.file
 
 const getOAuthClient = () => {
     return new google.auth.OAuth2(
@@ -30,6 +26,108 @@ const loadToken = () => {
     }
     return null;
 };
+
+// --- Helper Functions for Drive Operations ---
+
+async function createFolder(drive, name, parentId = null) {
+    const fileMetadata = {
+        name: name,
+        mimeType: 'application/vnd.google-apps.folder',
+    };
+    if (parentId) {
+        fileMetadata.parents = [parentId];
+    }
+    const file = await drive.files.create({
+        resource: fileMetadata,
+        fields: 'id',
+    });
+    return file.data.id;
+}
+
+async function uploadFile(drive, filePath, name, parentId = null, mimeType = null) {
+    const fileMetadata = {
+        name: name,
+    };
+    if (parentId) {
+        fileMetadata.parents = [parentId];
+    }
+    const media = {
+        mimeType: mimeType || 'application/octet-stream',
+        body: fs.createReadStream(filePath),
+    };
+    const file = await drive.files.create({
+        resource: fileMetadata,
+        media: media,
+        fields: 'id',
+    });
+    return file.data.id;
+}
+
+async function uploadFolderRecursive(drive, localPath, parentId) {
+    const items = fs.readdirSync(localPath);
+
+    for (const item of items) {
+        const itemPath = path.join(localPath, item);
+        const stat = fs.statSync(itemPath);
+
+        if (stat.isDirectory()) {
+            const folderId = await createFolder(drive, item, parentId);
+            await uploadFolderRecursive(drive, itemPath, folderId);
+        } else {
+            await uploadFile(drive, itemPath, item, parentId);
+        }
+    }
+}
+
+async function findFileInFolder(drive, folderId, name) {
+    const res = await drive.files.list({
+        q: `'${folderId}' in parents and name = '${name}' and trashed = false`,
+        fields: 'files(id, name, mimeType)',
+    });
+    return res.data.files[0];
+}
+
+async function downloadFile(drive, fileId, destPath) {
+    const dest = fs.createWriteStream(destPath);
+    const res = await drive.files.get(
+        { fileId: fileId, alt: 'media' },
+        { responseType: 'stream' }
+    );
+    
+    return new Promise((resolve, reject) => {
+        res.data
+            .on('end', () => {})
+            .on('error', reject)
+            .pipe(dest);
+        
+        dest.on('finish', resolve);
+        dest.on('error', reject);
+    });
+}
+
+// Recursively restore a folder from Drive
+async function restoreFolderRecursive(drive, folderId, localPath) {
+    if (!fs.existsSync(localPath)) {
+        fs.mkdirSync(localPath, { recursive: true });
+    }
+
+    const res = await drive.files.list({
+        q: `'${folderId}' in parents and trashed = false`,
+        fields: 'files(id, name, mimeType)',
+        pageSize: 1000 // Page size might need handling if > 1000 files/folder
+    });
+
+    for (const file of res.data.files) {
+        const localFilePath = path.join(localPath, file.name);
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+            await restoreFolderRecursive(drive, file.id, localFilePath);
+        } else {
+            await downloadFile(drive, file.id, localFilePath);
+        }
+    }
+}
+
+// --- Controller Methods ---
 
 exports.getAuthUrl = (req, res) => {
     const oAuth2Client = getOAuthClient();
@@ -61,26 +159,23 @@ exports.isConnected = (req, res) => {
 
 exports.performBackup = async (req, res) => {
     try {
-        console.log('Starting backup process...');
+        console.log('Starting backup process (Folder Structure)...');
         const tokens = loadToken();
-        if (!tokens) {
-            console.error('No tokens found');
-            return res.status(401).json({ message: 'Google Drive not connected' });
-        }
+        if (!tokens) return res.status(401).json({ message: 'Google Drive not connected' });
 
         const oAuth2Client = getOAuthClient();
         oAuth2Client.setCredentials(tokens);
         const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
-        const backupDir = path.join(__dirname, '../backup_temp');
-        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+        const backupTempDir = path.join(__dirname, '../backup_temp');
+        if (!fs.existsSync(backupTempDir)) fs.mkdirSync(backupTempDir, { recursive: true });
 
-        const dbDumpPath = path.join(backupDir, 'db_dump');
+        // 1. Export DB and Zip it (keeping DB as a single zip is cleaner/safer)
+        console.log('Exporting database...');
+        const dbDumpPath = path.join(backupTempDir, 'db_dump');
         if (!fs.existsSync(dbDumpPath)) fs.mkdirSync(dbDumpPath, { recursive: true });
 
-        // 1. Export DB
-        console.log('Exporting database...');
-        const db = require('../models'); // Assuming index.js exports db with models
+        const db = require('../models');
         const modelNames = Object.keys(db).filter(key => key !== 'sequelize' && key !== 'Sequelize');
         
         for (const modelName of modelNames) {
@@ -89,77 +184,46 @@ exports.performBackup = async (req, res) => {
                     const data = await db[modelName].findAll();
                     fs.writeFileSync(path.join(dbDumpPath, `${modelName}.json`), JSON.stringify(data, null, 2));
                 }
-            } catch (dbError) {
-                console.error(`Failed to export model ${modelName}:`, dbError.message);
-            }
+            } catch (err) { console.error(`Failed model ${modelName}`, err.message); }
         }
-        console.log('Database export complete.');
 
-        // 2. Zip uploads and db dump
-        console.log('Creating zip archive...');
-        const zipPath = path.join(backupDir, `backup_${Date.now()}.zip`);
-        const output = fs.createWriteStream(zipPath);
+        const dbZipPath = path.join(backupTempDir, 'database.zip');
+        const output = fs.createWriteStream(dbZipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
-
-        archive.on('warning', function(err) {
-            if (err.code === 'ENOENT') {
-                console.warn('Archiver warning:', err);
-            } else {
-                throw err;
-            }
-        });
-        
-        archive.on('error', function(err) {
-            throw err;
-        });
-
         archive.pipe(output);
-        archive.directory(dbDumpPath, 'db_dump');
-        
-        const uploadsPath = path.join(__dirname, '../public/uploads');
-        if (fs.existsSync(uploadsPath)) {
-            archive.directory(uploadsPath, 'uploads');
-        } else {
-            console.warn('Uploads directory not found, skipping uploads backup.');
-        }
-        
+        archive.directory(dbDumpPath, false); // Zip contents, not the folder itself
         await archive.finalize();
-
-        // Wait for file to be closed
-        await new Promise((resolve, reject) => {
-            output.on('close', resolve);
-            output.on('error', reject);
-        });
-        console.log('Zip archive created at:', zipPath, 'Size:', fs.statSync(zipPath).size);
-
-        // 3. Upload to Drive
-        console.log('Uploading to Google Drive...');
-        const fileMetadata = {
-            name: path.basename(zipPath),
-            // parents: ['appDataFolder'] // Removed to allows user visibility in Root Drive
-        };
+        await new Promise((resolve, reject) => { output.on('close', resolve); output.on('error', reject); });
         
-        const media = {
-            mimeType: 'application/zip',
-            body: fs.createReadStream(zipPath),
-        };
+        // 2. Create Main Backup Folder on Drive
+        const folderName = `Backup_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+        console.log(`Creating drive folder: ${folderName}`);
+        const mainFolderId = await createFolder(drive, folderName);
 
-        const file = await drive.files.create({
-            resource: fileMetadata,
-            media: media,
-            fields: 'id',
-        });
-        console.log('Upload complete. File ID:', file.data.id);
+        // 3. Upload DB Zip
+        console.log('Uploading database.zip...');
+        await uploadFile(drive, dbZipPath, 'database.zip', mainFolderId, 'application/zip');
+
+        // 4. Upload Uploads Folder recursively
+        console.log('Uploading uploads folder recursively...');
+        const localUploadsPath = path.join(__dirname, '../public/uploads'); // Note: previously public/uploads
+        // Create 'uploads' folder on Drive
+        const driveUploadsFolderId = await createFolder(drive, 'uploads', mainFolderId);
+        
+        if (fs.existsSync(localUploadsPath)) {
+            await uploadFolderRecursive(drive, localUploadsPath, driveUploadsFolderId);
+        }
 
         // Cleanup
-        console.log('Cleaning up temporary files...');
-        fs.unlinkSync(zipPath);
+        fs.unlinkSync(dbZipPath);
         fs.rmSync(dbDumpPath, { recursive: true, force: true });
+        // Keeping backup_temp dir is fine, just empty
 
-        res.json({ success: true, message: 'Backup created successfully', fileId: file.data.id });
+        console.log('Backup complete.');
+        res.json({ success: true, message: 'Backup created successfully', fileId: mainFolderId });
 
     } catch (error) {
-        console.error('Backup error/trace:', error);
+        console.error('Backup error:', error);
         res.status(500).json({ message: 'Backup failed', error: error.message });
     }
 };
@@ -173,13 +237,17 @@ exports.listBackups = async (req, res) => {
         oAuth2Client.setCredentials(tokens);
         const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
+        // List Folders starting with Backup_
         const response = await drive.files.list({
-            q: "mimeType='application/zip' and name contains 'backup_'",
-            fields: 'files(id, name, createdTime, size)',
+            q: "mimeType='application/vnd.google-apps.folder' and name contains 'Backup_' and trashed = false",
+            fields: 'files(id, name, createdTime)',
             orderBy: 'createdTime desc'
         });
 
-        res.json({ success: true, files: response.data.files });
+        // Add dummy size since folders don't have size 0, or calculate strictly (expensive)
+        const backups = response.data.files.map(f => ({ ...f, size: 0 }));
+
+        res.json({ success: true, files: backups });
     } catch (error) {
         console.error('List error:', error);
         res.status(500).json({ message: 'Failed to list backups' });
@@ -187,8 +255,9 @@ exports.listBackups = async (req, res) => {
 };
 
 exports.restoreBackup = async (req, res) => {
-    const { fileId } = req.params;
+    const { fileId } = req.params; // This is now the Main Folder ID
     try {
+        console.log(`Starting restore from Folder ID: ${fileId}`);
         const tokens = loadToken();
         if (!tokens) return res.status(401).json({ message: 'Not connected' });
 
@@ -196,87 +265,66 @@ exports.restoreBackup = async (req, res) => {
         oAuth2Client.setCredentials(tokens);
         const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
-        const backupDir = path.join(__dirname, '../backup_temp');
-        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+        const backupTempDir = path.join(__dirname, '../backup_temp');
+        if (!fs.existsSync(backupTempDir)) fs.mkdirSync(backupTempDir, { recursive: true });
+
+        // 1. Find and Restore Database
+        const dbZipFile = await findFileInFolder(drive, fileId, 'database.zip');
+        if (!dbZipFile) throw new Error('database.zip not found in backup folder');
+
+        console.log('Downloading database.zip...');
+        const dbZipPath = path.join(backupTempDir, 'restore_db.zip');
+        await downloadFile(drive, dbZipFile.id, dbZipPath);
+
+        console.log('Restoring Database...');
+        // Extract DB Zip
+        const zip = new AdmZip(dbZipPath);
+        const dbDumpExtractPath = path.join(backupTempDir, 'restore_db_dump');
+        zip.extractAllTo(dbDumpExtractPath, true);
+
+        // Restore DB Data
+        const db = require('../models');
+        const files = fs.readdirSync(dbDumpExtractPath);
         
-        const zipPath = path.join(backupDir, 'restore.zip');
-        const dest = fs.createWriteStream(zipPath);
-
-        const response = await drive.files.get(
-            { fileId: fileId, alt: 'media' },
-            { responseType: 'stream' }
-        );
-
-        response.data
-            .on('error', (err) => {
-                console.error('Download error:', err);
-                res.status(500).json({ message: 'Download failed', error: err.message });
-            })
-            .pipe(dest);
-
-        dest.on('finish', async () => {
-            try {
-                // Extract
-                const zip = new AdmZip(zipPath);
-                zip.extractAllTo(backupDir, true);
-
-                // Restore Uploads
-                const uploadsSrc = path.join(backupDir, 'uploads');
-                const uploadsDest = path.join(__dirname, '../public/uploads');
-
-                if (fs.existsSync(uploadsSrc)) {
-                        // Simple strategy: Sync files. 
-                        // For true restore: Delete current uploads, move new uploads in.
-                        fs.rmSync(uploadsDest, { recursive: true, force: true });
-                        fs.renameSync(uploadsSrc, uploadsDest);
-                }
-
-                // Restore DB
-                const db = require('../models');
-                const dbDumpPath = path.join(backupDir, 'db_dump');
-                if (fs.existsSync(dbDumpPath)) {
-                    const files = fs.readdirSync(dbDumpPath);
-                    
-                    // Disable Foreign Key checks?
-                    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
-                    
-                    for (const file of files) {
-                        if (!file.endsWith('.json')) continue;
-                        const modelName = file.replace('.json', '');
-                        if (db[modelName]) {
-                            const data = JSON.parse(fs.readFileSync(path.join(dbDumpPath, file)));
-                            await db[modelName].destroy({ truncate: true, cascade: true }); // Clear table
-                            await db[modelName].bulkCreate(data);
-                        }
-                    }
-                    
-                    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
-                }
-
-                // Cleanup
-                fs.unlinkSync(zipPath);
-                fs.rmSync(backupDir, { recursive: true, force: true });
-
-                res.json({ success: true, message: 'Restore completed successfully' });
-
-            } catch (err) {
-                console.error('Restore processing error:', err);
-                // Only send response if not already sent (though difficult to guarantee here without flag)
-                if (!res.headersSent) {
-                     res.status(500).json({ message: 'Restore processing failed', error: err.message });
+        await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+        for (const file of files) {
+            if (!file.endsWith('.json')) continue;
+            const modelName = file.replace('.json', '');
+            if (db[modelName]) {
+                const data = JSON.parse(fs.readFileSync(path.join(dbDumpExtractPath, file)));
+                await db[modelName].destroy({ truncate: true, cascade: true });
+                if (data.length > 0) {
+                     await db[modelName].bulkCreate(data);
                 }
             }
-        });
+        }
+        await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+        
+        // 2. Restore Uploads
+        console.log('Restoring Uploads...');
+        const uploadsFolder = await findFileInFolder(drive, fileId, 'uploads');
+        if (uploadsFolder) {
+            const localUploadsDir = path.join(__dirname, '../public/uploads');
+            // Clear existing uploads? Yes, for clean restore.
+            if (fs.existsSync(localUploadsDir)) {
+                fs.rmSync(localUploadsDir, { recursive: true, force: true });
+            }
+            fs.mkdirSync(localUploadsDir, { recursive: true });
 
-        dest.on('error', (err) => {
-             console.error('File write error:', err);
-             if (!res.headersSent) {
-                res.status(500).json({ message: 'File write failed', error: err.message });
-             }
-        });
+            await restoreFolderRecursive(drive, uploadsFolder.id, localUploadsDir);
+        } else {
+            console.warn('No uploads folder found in backup.');
+        }
+
+        // Cleanup
+        fs.unlinkSync(dbZipPath);
+        fs.rmSync(dbDumpExtractPath, { recursive: true, force: true });
+
+        console.log('Restore complete.');
+        res.json({ success: true, message: 'Restore completed successfully' });
 
     } catch (error) {
-        console.error('Restore init error:', error);
-        res.status(500).json({ message: 'Restore initialization failed', error: error.message });
+        console.error('Restore error:', error);
+        res.status(500).json({ message: 'Restore failed', error: error.message });
     }
 };
