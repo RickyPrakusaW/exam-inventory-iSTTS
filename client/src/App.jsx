@@ -11,6 +11,7 @@ import DataMaster from './pages/admin/DataMaster';
 import LaporanMahasiswa from './pages/admin/LaporanMahasiswa';
 import ManajemenBerita from './pages/admin/ManajemenBerita';
 import EksporData from './pages/admin/EksporData';
+import BackupPage from './pages/admin/BackupPage';
 import GantiUsernamePassword from './pages/admin/GantiUsernamePassword';
 import InformasiBerita from './pages/InformasiBerita';
 import PencarianSoal from './pages/PencarianSoal';
@@ -51,6 +52,7 @@ function App() {
                   <Route path="/admin/laporan" element={<LaporanMahasiswa />} />
                   <Route path="/admin/berita" element={<ManajemenBerita />} />
                   <Route path="/admin/ekspor" element={<EksporData />} />
+                  <Route path="/admin/backup" element={<BackupPage />} />
                   <Route path="/admin/profile" element={<GantiUsernamePassword />} />
                 </Route>
               </Route>

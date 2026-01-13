@@ -36,6 +36,7 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/berita', beritaRoutes);
 app.use('/api/laporan', laporanRoutes);
 app.use('/api/export', require('./routes/exportRoutes'));
+app.use('/api/backup', require('./routes/backupRoutes'));
 
 // Test Route
 app.get('/', (req, res) => {

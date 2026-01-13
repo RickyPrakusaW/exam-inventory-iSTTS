@@ -1,0 +1,8 @@
+{
+  "ignore": [
+    "backup_temp/*",
+    "public/uploads/*",
+    "config/google_token.json",
+    "*.log"
+  ]
+}
