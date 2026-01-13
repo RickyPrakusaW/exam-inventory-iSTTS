@@ -1,4 +1,4 @@
-const { Soal, Matkul, User, Prodi, DownloadHistory, UserSavedSoal } = require('../models');
+const { Soal, Matkul, User, Prodi, DownloadHistory } = require('../models');
 const { uploadFileToDrive } = require('../utils/googleDriveService');
 const { sendEmail } = require('../utils/emailService');
 const fs = require('fs');
@@ -82,14 +82,7 @@ const getAllSoal = async (req, res) => {
         });
 
         // If userId is present, get the list of saved soals for this user
-        let savedSoalIds = new Set();
-        if (userId) {
-            const saved = await UserSavedSoal.findAll({
-                where: { user_id: userId },
-                attributes: ['soal_id']
-            });
-            savedSoalIds = new Set(saved.map(s => s.soal_id));
-        }
+
 
         // Format data to match frontend expectation
         const formattedSoals = soals.map(soal => ({
@@ -107,7 +100,7 @@ const getAllSoal = async (req, res) => {
             downloads: soal.download_count,
             status: soal.status,
             file_url: soal.file_url,
-            isSaved: savedSoalIds.has(soal.id) // Add isSaved flag
+            file_url: soal.file_url
         }));
 
         res.json(formattedSoals);

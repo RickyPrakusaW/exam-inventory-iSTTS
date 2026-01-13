@@ -16,7 +16,6 @@ const UserSidebar = ({ isOpen, onClose }) => {
         { name: 'Beranda', icon: <Home size={22} />, path: '/home' },
         { name: 'Informasi & Berita', icon: <Newspaper size={22} />, path: '/news' },
         { name: 'Pencarian Soal', icon: <Search size={22} />, path: '/search' },
-        { name: 'Perpustakaan Pribadi', icon: <Bookmark size={22} />, path: '/library' },
         { name: 'Riwayat Unduhan', icon: <History size={22} />, path: '/history' },
 
 

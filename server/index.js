@@ -23,7 +23,6 @@ const authRoutes = require('./routes/authRoutes');
 const soalRoutes = require('./routes/soalRoutes');
 const masterDataRoutes = require('./routes/masterDataRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
-const libraryRoutes = require('./routes/libraryRoutes');
 const beritaRoutes = require('./routes/beritaRoutes');
 const laporanRoutes = require('./routes/laporanRoutes');
 
@@ -32,7 +31,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/soal', soalRoutes);
 app.use('/api/master', masterDataRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/library', libraryRoutes);
 app.use('/api/berita', beritaRoutes);
 app.use('/api/laporan', laporanRoutes);
 app.use('/api/export', require('./routes/exportRoutes'));

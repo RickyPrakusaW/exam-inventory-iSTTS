@@ -15,7 +15,6 @@ import BackupPage from './pages/admin/BackupPage';
 import GantiUsernamePassword from './pages/admin/GantiUsernamePassword';
 import InformasiBerita from './pages/InformasiBerita';
 import PencarianSoal from './pages/PencarianSoal';
-import PerpustakaanPribadi from './pages/PerpustakaanPribadi';
 import RiwayatUnduhan from './pages/RiwayatUnduhan';
 import NotFound from './pages/NotFound';
 
@@ -37,7 +36,6 @@ function App() {
                   <Route path="/home" element={<Home />} />
                   <Route path="/news" element={<InformasiBerita />} />
                   <Route path="/search" element={<PencarianSoal />} />
-                  <Route path="/library" element={<PerpustakaanPribadi />} />
                   <Route path="/history" element={<RiwayatUnduhan />} />
 
                 </Route>

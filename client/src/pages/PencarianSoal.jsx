@@ -60,60 +60,13 @@ const PencarianSoal = () => {
         }
     };
 
-    const [savedSoals, setSavedSoals] = useState(new Set());
 
-    const fetchSavedSoals = async () => {
-        const userId = localStorage.getItem('userId');
-        if (!userId) return;
 
-        try {
-            const response = await fetch(`http://localhost:5000/api/library/${userId}`);
-            if (response.ok) {
-                const data = await response.json();
-                const ids = new Set(data.map(item => item.id));
-                setSavedSoals(ids);
-            }
-        } catch (error) {
-            console.error("Failed to fetch saved soals", error);
-        }
-    };
 
-    // [NEW] Sync savedSoals state with fetched soals if available
-    useEffect(() => {
-        if (soals.length > 0) {
-            const newSaved = new Set(savedSoals);
-            soals.forEach(s => {
-                if (s.isSaved) newSaved.add(s.id);
-            });
-            // Only update if size differs to avoid loop, 
-            // though strictly we should compare contents. 
-            // Simplified: we trust the backend 'isSaved' more.
-            // Actually, let's just use the 'savedSoals' set as the source of truth for UI
-            // and initialize it from both fetchSavedSoals and fetchSoals (if needed).
-            // But since we fetch all saved soals separately, that should be enough?
-            // The issue is likely that the separate fetch might fail or be slow.
-            // Let's rely on the separate fetch primarily, but 'isSaved' helps initial load?
-            // The User reported buttons not lighting up.
-            
-            // BETTER APPROACH:
-            // Use the 'isSaved' from 'soals' to populate 'savedSoals' initial state if 'savedSoals' is empty?
-            // Or just update 'savedSoals' whenever 'soals' changes?
-             const initialSaved = new Set(savedSoals);
-             let changed = false;
-             soals.forEach(s => {
-                 if (s.isSaved && !initialSaved.has(s.id)) {
-                     initialSaved.add(s.id);
-                     changed = true;
-                 }
-             });
-             if (changed) setSavedSoals(initialSaved);
-        }
-    }, [soals]);
 
     useEffect(() => {
         fetchProdi();
         fetchSoals();
-        fetchSavedSoals();
     }, []);
 
     // Filter hasil pencarian
@@ -170,61 +123,7 @@ const PencarianSoal = () => {
         }
     };
 
-    const handleSave = async (soalId) => {
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-            showToast('Silakan login terlebih dahulu', 'warning');
-            return;
-        }
 
-        // Ensure robust comparison by converting to number if needed, 
-        // assuming IDs are numbers from the backend for consistency.
-        const idToCheck = Number(soalId); 
-        const isSaved = savedSoals.has(idToCheck);
-
-        try {
-            let response;
-            if (isSaved) {
-                // Remove from library
-                response = await fetch(`http://localhost:5000/api/library/${userId}/${idToCheck}`, {
-                    method: 'DELETE'
-                });
-            } else {
-                // Add to library
-                response = await fetch('http://localhost:5000/api/library', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, soalId: idToCheck })
-                });
-            }
-            
-            if (response.ok) {
-                // Update state
-                setSavedSoals(prev => {
-                    const next = new Set(prev);
-                    if (isSaved) {
-                        next.delete(idToCheck);
-                    } else {
-                        next.add(idToCheck);
-                    }
-                    return next;
-                });
-
-                // Show toast only once, outside the setter
-                if (isSaved) {
-                    showToast('Dihapus dari perpustakaan pribadi', 'success');
-                } else {
-                    showToast('Disimpan ke perpustakaan pribadi', 'success');
-                }
-            } else {
-                const data = await response.json();
-                showToast(data.message || 'Gagal mengubah status simpan', 'error');
-            }
-        } catch (error) {
-            console.error("Failed to toggle save soal", error);
-            showToast("Terjadi kesalahan", 'error');
-        }
-    };
 
     const toggleSelection = (id) => {
         const newSelected = new Set(selectedIds);
@@ -509,17 +408,7 @@ const PencarianSoal = () => {
                                         <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                         <span>Unduh</span>
                                     </button>
-                                    <button 
-                                        onClick={() => handleSave(soal.id)}
-                                        className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 ${
-                                            savedSoals.has(soal.id)
-                                            ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
-                                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                                        } rounded-lg md:rounded-xl transition-colors active:scale-95 flex-shrink-0`}
-                                    >
-                                        <Bookmark className={`w-3.5 h-3.5 md:w-4 md:h-4 ${savedSoals.has(soal.id) ? 'fill-current' : ''}`} />
-                                        <span>{savedSoals.has(soal.id) ? 'Disimpan' : 'Simpan'}</span>
-                                    </button>
+
                                     <div className="flex items-center gap-1.5 md:gap-2 ml-auto md:ml-0">
                                         <button 
                                             onClick={(e) => {

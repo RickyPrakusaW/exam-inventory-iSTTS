@@ -5,7 +5,7 @@ const Matkul = require('./Matkul');
 const Soal = require('./Soal');
 const Laporan = require('./Laporan');
 
-const UserSavedSoal = require('./UserSavedSoal');
+
 const Berita = require('./Berita');
 const DownloadHistory = require('./DownloadHistory');
 
@@ -31,9 +31,7 @@ Laporan.belongsTo(User, { foreignKey: 'reporter_id' });
 Soal.hasMany(Laporan, { foreignKey: 'soal_id' });
 Laporan.belongsTo(Soal, { foreignKey: 'soal_id' });
 
-// Bookmarks (User <-> Soal Many-to-Many)
-User.belongsToMany(Soal, { through: UserSavedSoal, as: 'SavedSoals', foreignKey: 'user_id' });
-Soal.belongsToMany(User, { through: UserSavedSoal, as: 'SavedByUsers', foreignKey: 'soal_id' });
+
 
 // Download History
 User.hasMany(DownloadHistory, { foreignKey: 'user_id' });
@@ -49,7 +47,7 @@ module.exports = {
     Matkul,
     Soal,
     Laporan,
-    UserSavedSoal,
+
     Berita,
     DownloadHistory
 };

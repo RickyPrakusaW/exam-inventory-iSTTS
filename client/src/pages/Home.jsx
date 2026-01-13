@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { 
     Search, 
     Download, 
-    Bookmark, 
     ThumbsUp, 
     Bell, 
     ChevronRight, 
@@ -21,7 +20,7 @@ const Home = () => {
     const [announcements, setAnnouncements] = useState([]);
     const [popularSoals, setPopularSoals] = useState([]);
     const [recentSoals, setRecentSoals] = useState([]);
-    const [savedSoals, setSavedSoals] = useState(new Set()); // Track saved IDs
+
 
     useEffect(() => {
         const fetchAnnouncements = async () => {
@@ -69,26 +68,12 @@ const Home = () => {
             }
        };
 
-       const fetchSaved = async () => {
-            const userId = localStorage.getItem('userId');
-            if (userId) {
-                try {
-                    const response = await fetch(`http://localhost:5000/api/library/${userId}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        const ids = new Set(data.map(item => item.id));
-                        setSavedSoals(ids);
-                    }
-                } catch (error) {
-                    console.error("Failed to fetch library", error);
-                }
-            }
-       };
+
 
         fetchAnnouncements();
         fetchPopular();
         fetchRecent();
-        fetchSaved();
+
     }, []);
 
     const handleSearch = () => {
@@ -150,42 +135,7 @@ const Home = () => {
         }
     };
 
-    const handleSave = async (soalId) => {
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-            showToast('Silakan login terlebih dahulu', 'warning');
-            return;
-        }
 
-        const isSaved = savedSoals.has(soalId);
-        try {
-            let response;
-            if (isSaved) {
-                response = await fetch(`http://localhost:5000/api/library/${userId}/${soalId}`, { method: 'DELETE' });
-            } else {
-                response = await fetch('http://localhost:5000/api/library', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, soalId })
-                });
-            }
-
-            if (response.ok) {
-                setSavedSoals(prev => {
-                    const next = new Set(prev);
-                    if (isSaved) next.delete(soalId);
-                    else next.add(soalId);
-                    return next;
-                });
-                showToast(isSaved ? 'Dihapus dari koleksi' : 'Disimpan ke koleksi', 'success');
-            } else {
-                showToast('Gagal update status simpan', 'error');
-            }
-        } catch (error) {
-            console.error("Save failed", error);
-            showToast('Terjadi kesalahan', 'error');
-        }
-    };
 
     return (
         <div className="space-y-10 pb-12">
@@ -332,16 +282,7 @@ const Home = () => {
                                         <Download size={14} /> 
                                         <span>Unduh</span>
                                     </button>
-                                    <button 
-                                        onClick={() => handleSave(soal.id)}
-                                        className={`px-3 md:px-4 py-2 md:py-2.5 transition-colors active:scale-95 rounded-lg md:rounded-xl ${
-                                            savedSoals.has(soal.id)
-                                                ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' 
-                                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <Bookmark size={14} className={savedSoals.has(soal.id) ? 'fill-current' : ''} />
-                                    </button>
+
                                     <button 
                                         onClick={() => handleLike(soal.id)}
                                         className="px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95"
@@ -398,16 +339,7 @@ const Home = () => {
                                         <Download size={14} /> 
                                         <span>Unduh</span>
                                     </button>
-                                    <button 
-                                        onClick={() => handleSave(soal.id)}
-                                        className={`px-3 md:px-4 py-2 md:py-2.5 transition-colors active:scale-95 rounded-lg md:rounded-xl ${
-                                            savedSoals.has(soal.id)
-                                                ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' 
-                                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <Bookmark size={14} className={savedSoals.has(soal.id) ? 'fill-current' : ''} />
-                                    </button>
+
                                     <button 
                                         onClick={() => handleLike(soal.id)}
                                         className="px-3 md:px-4 py-2 md:py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95"
