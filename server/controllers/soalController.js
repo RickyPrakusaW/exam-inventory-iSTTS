@@ -436,6 +436,101 @@ const getDownloadHistory = async (req, res) => {
     }
 };
 
+const getPopularSoals = async (req, res) => {
+    try {
+        const soals = await Soal.findAll({
+            limit: 3,
+            order: [['download_count', 'DESC']],
+            include: [
+                { 
+                    model: Matkul, 
+                    attributes: ['name', 'code', 'semester'],
+                    include: [{ model: Prodi, attributes: ['name', 'fakultas'] }]
+                },
+                { model: User, attributes: ['name'] }
+            ]
+        });
+
+        const formattedSoals = soals.map(soal => ({
+            id: soal.id,
+            namaMatkul: soal.Matkul ? soal.Matkul.name : 'Unknown',
+            kodeMatkul: soal.Matkul ? soal.Matkul.code : 'Unknown',
+            jenisUjian: soal.type,
+            semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown',
+            tahunAjaran: `${soal.year}/${soal.year + 1}`,
+            dosenPengampu: soal.User ? soal.User.name : 'Unknown',
+            programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
+            fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
+            likes: soal.upvote_count,
+            downloads: soal.download_count,
+            file_url: soal.file_url
+        }));
+
+        res.json(formattedSoals);
+    } catch (error) {
+        console.error("Error fetching popular soals:", error);
+        res.status(500).json({ message: 'Error fetching popular soals', error: error.message });
+    }
+};
+
+const getRecentSoals = async (req, res) => {
+    try {
+        const soals = await Soal.findAll({
+            limit: 3,
+            order: [['createdAt', 'DESC']],
+             include: [
+                { 
+                    model: Matkul, 
+                    attributes: ['name', 'code', 'semester'],
+                    include: [{ model: Prodi, attributes: ['name', 'fakultas'] }]
+                },
+                { model: User, attributes: ['name'] }
+            ]
+        });
+
+        const formattedSoals = soals.map(soal => ({
+            id: soal.id,
+            namaMatkul: soal.Matkul ? soal.Matkul.name : 'Unknown',
+            kodeMatkul: soal.Matkul ? soal.Matkul.code : 'Unknown',
+            jenisUjian: soal.type,
+            semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown',
+            tahunAjaran: `${soal.year}/${soal.year + 1}`,
+            dosenPengampu: soal.User ? soal.User.name : 'Unknown',
+            programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
+            fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
+            isNew: true, // Since it's recent
+            likes: soal.upvote_count,
+            downloads: soal.download_count,
+            file_url: soal.file_url
+        }));
+
+        res.json(formattedSoals);
+    } catch (error) {
+         console.error("Error fetching recent soals:", error);
+         res.status(500).json({ message: 'Error fetching recent soals', error: error.message });
+    }
+};
+
+const toggleLikeSoal = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const soal = await Soal.findByPk(id);
+
+        if (!soal) {
+             return res.status(404).json({ message: 'Soal not found' });
+        }
+
+        // Simple increment for now as discussed
+        soal.upvote_count += 1;
+        await soal.save();
+
+        res.json({ message: 'Soal upvoted', likes: soal.upvote_count });
+    } catch (error) {
+        console.error("Error liking soal:", error);
+        res.status(500).json({ message: 'Error liking soal', error: error.message });
+    }
+};
+
 module.exports = {
     createSoal,
     getAllSoal,
@@ -443,5 +538,8 @@ module.exports = {
     deleteSoal,
     emailSoals,
     downloadSoal,
-    getDownloadHistory
+    getDownloadHistory,
+    getPopularSoals,
+    getRecentSoals,
+    toggleLikeSoal
 };
