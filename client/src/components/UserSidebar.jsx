@@ -18,7 +18,7 @@ const UserSidebar = ({ isOpen, onClose }) => {
         { name: 'Pencarian Soal', icon: <Search size={22} />, path: '/search' },
         { name: 'Perpustakaan Pribadi', icon: <Bookmark size={22} />, path: '/library' },
         { name: 'Riwayat Unduhan', icon: <History size={22} />, path: '/history' },
-        { name: 'Progres Belajar', icon: <TrendingUp size={22} />, path: '/progress' },
+
         { name: 'Pengaturan Akun', icon: <Settings size={22} />, path: '/settings' },
     ];
 

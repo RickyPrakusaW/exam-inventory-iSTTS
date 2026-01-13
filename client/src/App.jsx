@@ -16,7 +16,7 @@ import InformasiBerita from './pages/InformasiBerita';
 import PencarianSoal from './pages/PencarianSoal';
 import PerpustakaanPribadi from './pages/PerpustakaanPribadi';
 import RiwayatUnduhan from './pages/RiwayatUnduhan';
-import ProgresBelajar from './pages/ProgresBelajar';
+
 import Pengaturan from './pages/Pengaturan';
 import NotFound from './pages/NotFound';
 
@@ -40,7 +40,7 @@ function App() {
                   <Route path="/search" element={<PencarianSoal />} />
                   <Route path="/library" element={<PerpustakaanPribadi />} />
                   <Route path="/history" element={<RiwayatUnduhan />} />
-                  <Route path="/progress" element={<ProgresBelajar />} />
+
                   <Route path="/settings" element={<Pengaturan />} />
                 </Route>
               </Route>
