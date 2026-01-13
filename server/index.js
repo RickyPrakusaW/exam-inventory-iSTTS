@@ -25,6 +25,7 @@ const masterDataRoutes = require('./routes/masterDataRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const beritaRoutes = require('./routes/beritaRoutes');
+const laporanRoutes = require('./routes/laporanRoutes');
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -33,6 +34,7 @@ app.use('/api/master', masterDataRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/berita', beritaRoutes);
+app.use('/api/laporan', laporanRoutes);
 
 // Test Route
 app.get('/', (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Bookmark, ThumbsUp, FileText, Send, CheckSquare, Square, Mail } from 'lucide-react';
+import { Search, Filter, Download, Bookmark, ThumbsUp, FileText, Send, CheckSquare, Square, Mail, Flag, X } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirmation } from '../contexts/ConfirmationContext';
 
@@ -13,6 +13,12 @@ const PencarianSoal = () => {
     // Selection Mode State
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
+
+    // Report State
+    const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [selectedSoalForReport, setSelectedSoalForReport] = useState(null);
+    const [reportReason, setReportReason] = useState('');
+    const [reportType, setReportType] = useState('Soal Rusak');
 
     const [soals, setSoals] = useState([]);
     const [prodiList, setProdiList] = useState([]);
@@ -237,6 +243,46 @@ const PencarianSoal = () => {
         }
     };
 
+    const handleReportClick = (soal) => {
+        setSelectedSoalForReport(soal);
+        setReportModalOpen(true);
+        setReportReason('');
+        setReportType('Soal Rusak');
+    };
+
+    const submitReport = async (e) => {
+        e.preventDefault();
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+            showToast('Silakan login terlebih dahulu', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/laporan/report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    soalId: selectedSoalForReport.id,
+                    reason: reportReason,
+                    jenis: reportType
+                })
+            });
+
+            if (response.ok) {
+                showToast('Laporan berhasil dikirim', 'success');
+                setReportModalOpen(false);
+            } else {
+                const data = await response.json();
+                showToast(data.message || 'Gagal mengirim laporan', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to submit report', error);
+            showToast('Terjadi kesalahan', 'error');
+        }
+    };
+
     return (
         <div className="space-y-6 md:space-y-8 pb-12">
             <div className="space-y-2">
@@ -418,9 +464,21 @@ const PencarianSoal = () => {
                                         <Bookmark className={`w-3.5 h-3.5 md:w-4 md:h-4 ${savedSoals.has(soal.id) ? 'fill-current' : ''}`} />
                                         <span>{savedSoals.has(soal.id) ? 'Disimpan' : 'Simpan'}</span>
                                     </button>
-                                    <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-500 ml-auto md:ml-0">
-                                        <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                        <span>{soal.downloads}</span>
+                                    <div className="flex items-center gap-1.5 md:gap-2 ml-auto md:ml-0">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReportClick(soal);
+                                            }}
+                                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                            title="Laporkan Masalah"
+                                        >
+                                            <Flag className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                                        </button>
+                                        <div className="flex items-center gap-1 text-xs md:text-sm text-gray-500 px-2 pl-3 border-l border-gray-200">
+                                            <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                            <span>{soal.downloads}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -428,6 +486,76 @@ const PencarianSoal = () => {
                     </div>
                 )}
             </div>
+
+            {/* Report Modal */}
+            {reportModalOpen && selectedSoalForReport && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                <Flag className="w-5 h-5 text-rose-600" />
+                                Laporkan Masalah
+                            </h3>
+                            <button 
+                                onClick={() => setReportModalOpen(false)}
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-4 md:p-6">
+                            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <p className="text-xs text-gray-500 mb-1">Melaporkan Soal:</p>
+                                <p className="font-bold text-gray-900 line-clamp-1">{selectedSoalForReport.namaMatkul}</p>
+                            </div>
+
+                            <form onSubmit={submitReport} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Jenis Masalah</label>
+                                    <select 
+                                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none text-sm font-medium text-gray-700"
+                                        value={reportType}
+                                        onChange={(e) => setReportType(e.target.value)}
+                                    >
+                                        <option value="Soal Rusak">File Rusak / Tidak Bisa Dibuka</option>
+                                        <option value="Soal Tidak Sesuai">Informasi Tidak Sesuai (Matkul/Prodi/Tahun salah)</option>
+                                        <option value="Duplikat">Duplikat Soal</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Deskripsi Masalah</label>
+                                    <textarea 
+                                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none text-sm min-h-[100px] resize-none"
+                                        placeholder="Jelaskan detail masalah yang Anda temukan..."
+                                        value={reportReason}
+                                        onChange={(e) => setReportReason(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setReportModalOpen(false)}
+                                        className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        className="flex-1 px-4 py-2.5 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors shadow-lg shadow-rose-200"
+                                    >
+                                        Kirim Laporan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

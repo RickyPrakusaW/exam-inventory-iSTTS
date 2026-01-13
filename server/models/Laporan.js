@@ -11,6 +11,10 @@ const Laporan = sequelize.define('Laporan', {
         type: DataTypes.TEXT,
         allowNull: false,
     },
+    jenis: {
+        type: DataTypes.STRING, // e.g., 'Soal Rusak', 'Soal Tidak Sesuai'
+        allowNull: false,
+    },
     status: {
         type: DataTypes.ENUM('pending', 'resolved', 'rejected'),
         defaultValue: 'pending',

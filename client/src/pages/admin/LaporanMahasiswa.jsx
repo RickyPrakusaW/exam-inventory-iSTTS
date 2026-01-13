@@ -1,53 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { AlertTriangle, Search, Eye, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
 
 const LaporanMahasiswa = () => {
+    const { showToast } = useToast();
+    const { confirm } = useConfirmation();
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Semua Status');
+    const [reports, setReports] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const laporan = [
-        {
-            id: 1,
-            mahasiswa: 'John Doe',
-            nrp: '222222222',
-            prodi: 'Teknik Informatika',
-            jenis: 'Soal Tidak Sesuai',
-            deskripsi: 'Soal UAS Algoritma memiliki jawaban yang salah pada nomor 5',
-            status: 'Menunggu',
-            tanggal: '20 Jan 2025',
-            waktu: '14:30'
-        },
-        {
-            id: 2,
-            mahasiswa: 'Jane Smith',
-            nrp: '222222223',
-            prodi: 'Teknik Informatika',
-            jenis: 'Soal Rusak',
-            deskripsi: 'File PDF tidak dapat dibuka atau corrupt',
-            status: 'Diproses',
-            tanggal: '19 Jan 2025',
-            waktu: '10:15'
-        },
-        {
-            id: 3,
-            mahasiswa: 'Bob Johnson',
-            nrp: '222222224',
-            prodi: 'Teknik Sipil',
-            jenis: 'Soal Tidak Lengkap',
-            deskripsi: 'Halaman 3 dari soal UTS Kalkulus hilang',
-            status: 'Selesai',
-            tanggal: '18 Jan 2025',
-            waktu: '16:45'
+    const fetchReports = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/laporan');
+            if (response.ok) {
+                const data = await response.json();
+                setReports(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch reports', error);
+            showToast('Gagal memuat laporan', 'error');
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
+
+    useEffect(() => {
+        fetchReports();
+    }, []);
+
+    const handleUpdateStatus = async (id, newStatus) => {
+        const isConfirmed = await confirm({
+            title: 'Konfirmasi',
+            message: `Apakah Anda yakin ingin mengubah status laporan ini menjadi ${newStatus}?`,
+            confirmText: 'Ya, Ubah',
+            type: 'info'
+        });
+
+        if (!isConfirmed) return;
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/laporan/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (response.ok) {
+                showToast('Status laporan berhasil diperbarui', 'success');
+                fetchReports();
+            } else {
+                showToast('Gagal memperbarui status', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to update status', error);
+            showToast('Terjadi kesalahan', 'error');
+        }
+    };
+
+    const pendingCount = reports.filter(r => r.status === 'pending').length;
+    const processCount = reports.filter(r => r.status === 'resolved').length; // Assuming resolved = diproses/selesai mapping? 
+    // Wait, status enum is 'pending', 'resolved', 'rejected'.
+    // UI has 'Menunggu', 'Diproses', 'Selesai'.
+    // Let's map 'pending' -> 'Menunggu', 'resolved' -> 'Selesai'. 'rejected' -> 'Ditolak' (or maybe map to something else).
+    // The previous mock data had 'Diproses'. I should probably stick to the enum 'pending', 'resolved', 'rejected' for simplicity or update the enum.
+    // For now, I will treat 'resolved' as 'Selesai'.
+    const doneCount = reports.filter(r => r.status === 'resolved').length;
+
+    const filteredReports = reports.filter(item => {
+        const matchesSearch = 
+            item.User?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.User?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        let matchesStatus = true;
+        if (statusFilter !== 'Semua Status') {
+            if (statusFilter === 'Menunggu') matchesStatus = item.status === 'pending';
+            if (statusFilter === 'Selesai') matchesStatus = item.status === 'resolved';
+            if (statusFilter === 'Ditolak') matchesStatus = item.status === 'rejected';
+        }
+
+        return matchesSearch && matchesStatus;
+    });
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'Menunggu':
-                return <span className="px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-full flex items-center gap-1"><Clock size={12} /> {status}</span>;
-            case 'Diproses':
-                return <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full flex items-center gap-1"><Clock size={12} /> {status}</span>;
-            case 'Selesai':
-                return <span className="px-3 py-1 bg-green-50 text-green-600 text-xs font-bold rounded-full flex items-center gap-1"><CheckCircle size={12} /> {status}</span>;
+            case 'pending':
+                return <span className="px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-full flex items-center gap-1"><Clock size={12} /> Menunggu</span>;
+            case 'resolved':
+                return <span className="px-3 py-1 bg-green-50 text-green-600 text-xs font-bold rounded-full flex items-center gap-1"><CheckCircle size={12} /> Selesai</span>;
+            case 'rejected':
+                return <span className="px-3 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-full flex items-center gap-1"><XCircle size={12} /> Ditolak</span>;
             default:
                 return <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded-full">{status}</span>;
         }
@@ -69,7 +112,7 @@ const LaporanMahasiswa = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs md:text-sm text-gray-500 mb-1">Menunggu</p>
-                            <p className="text-2xl md:text-3xl font-black text-amber-600">12</p>
+                            <p className="text-2xl md:text-3xl font-black text-amber-600">{pendingCount}</p>
                         </div>
                         <div className="p-2 md:p-3 bg-amber-50 rounded-xl">
                             <Clock className="text-amber-600 w-5 h-5 md:w-6 md:h-6" />
@@ -79,11 +122,11 @@ const LaporanMahasiswa = () => {
                 <div className="bg-white p-4 md:p-6 rounded-xl md:rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs md:text-sm text-gray-500 mb-1">Diproses</p>
-                            <p className="text-2xl md:text-3xl font-black text-blue-600">8</p>
+                            <p className="text-xs md:text-sm text-gray-500 mb-1">Ditolak</p>
+                            <p className="text-2xl md:text-3xl font-black text-red-600">{reports.filter(r => r.status === 'rejected').length}</p>
                         </div>
-                        <div className="p-2 md:p-3 bg-blue-50 rounded-xl">
-                            <Clock className="text-blue-600 w-5 h-5 md:w-6 md:h-6" />
+                        <div className="p-2 md:p-3 bg-red-50 rounded-xl">
+                            <XCircle className="text-red-600 w-5 h-5 md:w-6 md:h-6" />
                         </div>
                     </div>
                 </div>
@@ -91,7 +134,7 @@ const LaporanMahasiswa = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs md:text-sm text-gray-500 mb-1">Selesai</p>
-                            <p className="text-2xl md:text-3xl font-black text-green-600">45</p>
+                            <p className="text-2xl md:text-3xl font-black text-green-600">{doneCount}</p>
                         </div>
                         <div className="p-2 md:p-3 bg-green-50 rounded-xl">
                             <CheckCircle className="text-green-600 w-5 h-5 md:w-6 md:h-6" />
@@ -114,11 +157,15 @@ const LaporanMahasiswa = () => {
                         />
                     </div>
                     <div className="relative">
-                        <select className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base">
+                        <select 
+                            className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
                             <option>Semua Status</option>
                             <option>Menunggu</option>
-                            <option>Diproses</option>
                             <option>Selesai</option>
+                            <option>Ditolak</option>
                         </select>
                         <Filter className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4 md:w-[18px] md:h-[18px]" />
                     </div>
@@ -127,16 +174,21 @@ const LaporanMahasiswa = () => {
 
             {/* Laporan List */}
             <div className="space-y-4">
-                {laporan.map(item => (
+                {filteredReports.map(item => (
                     <div key={item.id} className="bg-white p-4 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 md:gap-4 mb-4">
                             <div className="space-y-1 flex-1 min-w-0">
                                 <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                                    <h3 className="font-bold text-gray-900 text-base md:text-lg">{item.mahasiswa}</h3>
-                                    <span className="text-xs text-gray-400">({item.nrp})</span>
+                                    <h3 className="font-bold text-gray-900 text-base md:text-lg">{item.User?.name || 'Unknown User'}</h3>
+                                    <span className="text-xs text-gray-400">({item.User?.email})</span>
                                 </div>
-                                <p className="text-xs md:text-sm text-gray-500">{item.prodi}</p>
-                                <p className="text-[10px] md:text-xs text-gray-400 mt-2">{item.tanggal} • {item.waktu}</p>
+                                <p className="text-xs md:text-sm text-gray-500">
+                                    {item.Soal?.name || 'Soal'} • {item.Soal?.Matkul?.name || 'Mata Kuliah'}
+                                </p>
+                                <p className="text-[10px] md:text-xs text-gray-400 mt-2">
+                                    {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • 
+                                    {new Date(item.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
                             </div>
                             <div className="shrink-0">
                                 {getStatusBadge(item.status)}
@@ -149,19 +201,34 @@ const LaporanMahasiswa = () => {
                             </div>
                             <div>
                                 <span className="text-[10px] md:text-xs font-bold text-gray-500 uppercase">Deskripsi:</span>
-                                <p className="text-xs md:text-sm text-gray-600 mt-1 leading-relaxed">{item.deskripsi}</p>
+                                <p className="text-xs md:text-sm text-gray-600 mt-1 leading-relaxed">{item.reason}</p>
                             </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 pt-3 md:pt-4 border-t border-gray-50 mt-4">
-                            <button className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95">
+                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 pt-3 md:pt-4 border-t border-gray-50 mt-4">
+                            <button 
+                                onClick={() => item.Soal?.file_url && window.open(item.Soal.file_url, '_blank')}
+                                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-gray-200 transition-colors active:scale-95"
+                            >
                                 <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                Lihat Detail
+                                Lihat Soal
                             </button>
-                            {item.status === 'Menunggu' && (
-                                <button className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-green-700 transition-colors active:scale-95">
-                                    <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                    Terima
-                                </button>
+                            {item.status === 'pending' && (
+                                <>
+                                    <button 
+                                        onClick={() => handleUpdateStatus(item.id, 'resolved')}
+                                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-green-700 transition-colors active:scale-95"
+                                    >
+                                        <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                        Selesai
+                                    </button>
+                                    <button 
+                                        onClick={() => handleUpdateStatus(item.id, 'rejected')}
+                                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-600 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-red-200 transition-colors active:scale-95"
+                                    >
+                                        <XCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                        Tolak
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
