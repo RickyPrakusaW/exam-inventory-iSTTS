@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { BookOpen, Menu, User as UserIcon } from 'lucide-react';
 import UserSidebar from './UserSidebar';
-import NotificationDropdown from './NotificationDropdown';
+
 
 const UserLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -30,7 +30,7 @@ const UserLayout = () => {
                     </div>
 
                     <div className="flex items-center gap-3 md:gap-6">
-                        <NotificationDropdown />
+{/* NotificationDropdown removed for users */}
                         
                         <div className="h-8 w-[1px] bg-gray-200 mx-2 hidden sm:block"></div>
 
