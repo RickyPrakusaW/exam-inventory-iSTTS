@@ -45,9 +45,28 @@ const PencarianSoal = () => {
         }
     };
 
+    const [savedSoals, setSavedSoals] = useState(new Set());
+
+    const fetchSavedSoals = async () => {
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/library/${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                const ids = new Set(data.map(item => item.id));
+                setSavedSoals(ids);
+            }
+        } catch (error) {
+            console.error("Failed to fetch saved soals", error);
+        }
+    };
+
     useEffect(() => {
         fetchProdi();
         fetchSoals();
+        fetchSavedSoals();
     }, []);
 
     // Filter hasil pencarian
@@ -103,23 +122,52 @@ const PencarianSoal = () => {
             return;
         }
 
+        // Ensure robust comparison by converting to number if needed, 
+        // assuming IDs are numbers from the backend for consistency.
+        const idToCheck = Number(soalId); 
+        const isSaved = savedSoals.has(idToCheck);
+
         try {
-            const response = await fetch('http://localhost:5000/api/library', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, soalId })
-            });
-            
-            const data = await response.json();
+            let response;
+            if (isSaved) {
+                // Remove from library
+                response = await fetch(`http://localhost:5000/api/library/${userId}/${idToCheck}`, {
+                    method: 'DELETE'
+                });
+            } else {
+                // Add to library
+                response = await fetch('http://localhost:5000/api/library', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, soalId: idToCheck })
+                });
+            }
             
             if (response.ok) {
-                showToast('Berhasil disimpan ke perpustakaan pribadi', 'success');
+                // Update state
+                setSavedSoals(prev => {
+                    const next = new Set(prev);
+                    if (isSaved) {
+                        next.delete(idToCheck);
+                    } else {
+                        next.add(idToCheck);
+                    }
+                    return next;
+                });
+
+                // Show toast only once, outside the setter
+                if (isSaved) {
+                    showToast('Dihapus dari perpustakaan pribadi', 'success');
+                } else {
+                    showToast('Disimpan ke perpustakaan pribadi', 'success');
+                }
             } else {
-                showToast(data.message || 'Gagal menyimpan', 'error');
+                const data = await response.json();
+                showToast(data.message || 'Gagal mengubah status simpan', 'error');
             }
         } catch (error) {
-            console.error("Failed to save soal", error);
-            showToast("Terjadi kesalahan saat menyimpan", 'error');
+            console.error("Failed to toggle save soal", error);
+            showToast("Terjadi kesalahan", 'error');
         }
     };
 
@@ -361,10 +409,14 @@ const PencarianSoal = () => {
                                     </button>
                                     <button 
                                         onClick={() => handleSave(soal.id)}
-                                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg md:rounded-xl transition-colors active:scale-95 flex-shrink-0"
+                                        className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 ${
+                                            savedSoals.has(soal.id)
+                                            ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                        } rounded-lg md:rounded-xl transition-colors active:scale-95 flex-shrink-0`}
                                     >
-                                        <Bookmark className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                        <span>Simpan</span>
+                                        <Bookmark className={`w-3.5 h-3.5 md:w-4 md:h-4 ${savedSoals.has(soal.id) ? 'fill-current' : ''}`} />
+                                        <span>{savedSoals.has(soal.id) ? 'Disimpan' : 'Simpan'}</span>
                                     </button>
                                     <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-500 ml-auto md:ml-0">
                                         <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
