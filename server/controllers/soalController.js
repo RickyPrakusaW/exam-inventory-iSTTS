@@ -1,4 +1,4 @@
-const { Soal, Matkul, User, Prodi } = require('../models');
+const { Soal, Matkul, User, Prodi, DownloadHistory } = require('../models');
 const { uploadFileToDrive } = require('../utils/googleDriveService');
 const { sendEmail } = require('../utils/emailService');
 const fs = require('fs');
@@ -356,11 +356,92 @@ const emailSoals = async (req, res) => {
     }
 };
 
+const downloadSoal = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.body.userId; // Sent from frontend
+
+        const soal = await Soal.findByPk(id);
+        if (!soal) {
+            return res.status(404).json({ message: 'Soal not found' });
+        }
+
+        // Record history if userId is provided
+        if (userId) {
+            await DownloadHistory.create({
+                user_id: userId,
+                soal_id: id
+            });
+        }
+
+        // Increment download count
+        soal.download_count += 1;
+        await soal.save();
+
+        res.json({ file_url: soal.file_url });
+    } catch (error) {
+        console.error("Download error:", error);
+        res.status(500).json({ message: 'Error processing download', error: error.message });
+    }
+};
+
+const getDownloadHistory = async (req, res) => {
+    try {
+        const userId = req.query.userId;
+        if (!userId) {
+             return res.status(400).json({ message: 'UserId is required' });
+        }
+
+        const history = await DownloadHistory.findAll({
+            where: { user_id: userId },
+            include: [
+                {
+                    model: Soal,
+                    include: [
+                        {
+                            model: Matkul,
+                            include: [{ model: Prodi }]
+                        },
+                        { model: User, attributes: ['name'] }
+                    ]
+                }
+            ],
+            order: [['downloaded_at', 'DESC']]
+        });
+
+        const formattedHistory = history.map(h => {
+            const soal = h.Soal;
+            if (!soal) return null;
+            return {
+                id: h.id, // History ID
+                soalId: soal.id,
+                namaMatkul: soal.Matkul ? soal.Matkul.name : 'Unknown',
+                kodeMatkul: soal.Matkul ? soal.Matkul.code : 'Unknown',
+                jenisUjian: soal.type,
+                semester: soal.Matkul ? (soal.Matkul.semester % 2 !== 0 ? 'Ganjil' : 'Genap') : 'Unknown',
+                tahunAjaran: `${soal.year}/${soal.year + 1}`,
+                dosenPengampu: soal.User ? soal.User.name : 'Unknown',
+                programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
+                fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
+                downloadDate: new Date(h.downloaded_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                downloadTime: new Date(h.downloaded_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                file_url: soal.file_url
+            };
+        }).filter(item => item !== null);
+
+        res.json(formattedHistory);
+    } catch (error) {
+        console.error("Get history error:", error);
+        res.status(500).json({ message: 'Error fetching history', error: error.message });
+    }
+};
+
 module.exports = {
     createSoal,
     getAllSoal,
     updateSoal,
-    updateSoal,
     deleteSoal,
-    emailSoals
+    emailSoals,
+    downloadSoal,
+    getDownloadHistory
 };

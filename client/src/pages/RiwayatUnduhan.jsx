@@ -1,61 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { History, Download, FileText, Calendar, Clock } from 'lucide-react';
+import { getCurrentUser } from '../services/authService';
 
 const RiwayatUnduhan = () => {
-    const downloadHistory = [
-        {
-            id: 1,
-            namaMatkul: 'Algoritma dan Pemrograman',
-            kodeMatkul: 'IF101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Ahmad Wijaya, S.Kom., M.Kom.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloadDate: '20 Jan 2025',
-            downloadTime: '14:30'
-        },
-        {
-            id: 2,
-            namaMatkul: 'Basis Data',
-            kodeMatkul: 'IF201',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Prof. Dr. Budi Santoso, S.Kom., M.T.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloadDate: '18 Jan 2025',
-            downloadTime: '10:15'
-        },
-        {
-            id: 3,
-            namaMatkul: 'Kalkulus',
-            kodeMatkul: 'MT101',
-            jenisUjian: 'UAS',
-            semester: 'Ganjil',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Siti Nurhaliza, S.Si., M.Si.',
-            programStudi: 'S1-Teknik Elektro',
-            fakultas: 'Fakultas Teknik',
-            downloadDate: '15 Jan 2025',
-            downloadTime: '16:45'
-        },
-        {
-            id: 4,
-            namaMatkul: 'Pemrograman Web',
-            kodeMatkul: 'IF301',
-            jenisUjian: 'UTS',
-            semester: 'Genap',
-            tahunAjaran: '2023/2024',
-            dosenPengampu: 'Dr. Rudi Hartono, S.Kom., M.T.',
-            programStudi: 'S1-Informatika',
-            fakultas: 'Fakultas Teknologi Informasi',
-            downloadDate: '12 Jan 2025',
-            downloadTime: '09:20'
+    const [downloadHistory, setDownloadHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchHistory = async () => {
+        const currentUser = getCurrentUser();
+        // Fallback to localStorage if not found in authService helper (legacy support)
+        const userId = currentUser.id || localStorage.getItem('userId');
+
+        if (!userId) {
+            setLoading(false);
+            return;
         }
-    ];
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/soal/history/me?userId=${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setDownloadHistory(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch history", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const handleDownloadAgain = (url) => {
+        if (url) window.open(url, '_blank');
+    };
 
     return (
         <div className="space-y-8 pb-12">
@@ -67,7 +47,9 @@ const RiwayatUnduhan = () => {
                 <p className="text-gray-500 text-lg">Daftar semua soal yang telah Anda unduh</p>
             </div>
 
-            {downloadHistory.length === 0 ? (
+            {loading ? (
+                 <div className="text-center py-12 text-gray-500">Memuat riwayat...</div>
+            ) : downloadHistory.length === 0 ? (
                 <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center">
                     <Download size={64} className="mx-auto mb-4 text-gray-300" />
                     <h3 className="text-xl font-bold text-gray-800 mb-2">Belum Ada Riwayat Unduhan</h3>
@@ -122,7 +104,10 @@ const RiwayatUnduhan = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 md:gap-3 pt-4 border-t border-gray-50">
-                                <button className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95">
+                                <button
+                                    onClick={() => handleDownloadAgain(item.file_url)}
+                                    className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95"
+                                >
                                     <Download size={14} className="md:w-4 md:h-4" /> 
                                     <span>Unduh Lagi</span>
                                 </button>

@@ -63,12 +63,37 @@ const PencarianSoal = () => {
         return matchesSearch && matchesJurusan && matchesType;
     });
 
-    const handleDownload = (url) => {
-        if (!url) {
-            showToast("File URL not found", "error");
-            return;
+    const handleDownload = async (soalId, currentUrl) => {
+        const userId = localStorage.getItem('userId');
+        
+        // If user is logged in, track history
+        if (userId) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/soal/${soalId}/download`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.file_url) {
+                         window.open(data.file_url, '_blank');
+                         return;
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to record download history", error);
+                // Fallback to direct download if tracking fails
+            }
         }
-        window.open(url, '_blank');
+        
+        // Default behavior (not logged in or API failed)
+        if (currentUrl) {
+            window.open(currentUrl, '_blank');
+        } else {
+            showToast("File URL not found", "error");
+        }
     };
 
     const handleSave = async (soalId) => {
@@ -328,7 +353,7 @@ const PencarianSoal = () => {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 md:gap-4 pt-4 border-t border-gray-50">
                                     <button 
-                                        onClick={() => handleDownload(soal.file_url)}
+                                        onClick={() => handleDownload(soal.id, soal.file_url)}
                                         className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-rose-600 text-white text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-rose-700 transition-colors active:scale-95 flex-shrink-0"
                                     >
                                         <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />

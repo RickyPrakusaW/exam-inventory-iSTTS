@@ -7,6 +7,7 @@ const Laporan = require('./Laporan');
 
 const UserSavedSoal = require('./UserSavedSoal');
 const Berita = require('./Berita');
+const DownloadHistory = require('./DownloadHistory');
 
 // Associations
 
@@ -34,6 +35,13 @@ Laporan.belongsTo(Soal, { foreignKey: 'soal_id' });
 User.belongsToMany(Soal, { through: UserSavedSoal, as: 'SavedSoals', foreignKey: 'user_id' });
 Soal.belongsToMany(User, { through: UserSavedSoal, as: 'SavedByUsers', foreignKey: 'soal_id' });
 
+// Download History
+User.hasMany(DownloadHistory, { foreignKey: 'user_id' });
+DownloadHistory.belongsTo(User, { foreignKey: 'user_id' });
+
+Soal.hasMany(DownloadHistory, { foreignKey: 'soal_id' });
+DownloadHistory.belongsTo(Soal, { foreignKey: 'soal_id' });
+
 module.exports = {
     sequelize,
     User,
@@ -42,5 +50,6 @@ module.exports = {
     Soal,
     Laporan,
     UserSavedSoal,
-    Berita
+    Berita,
+    DownloadHistory
 };
