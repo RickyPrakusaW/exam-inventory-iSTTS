@@ -98,8 +98,8 @@ const getAllSoal = async (req, res) => {
             programStudi: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.name : 'Unknown',
             fakultas: soal.Matkul && soal.Matkul.Prodi ? soal.Matkul.Prodi.fakultas : 'Unknown',
             downloads: soal.download_count,
+            likes: soal.upvote_count,
             status: soal.status,
-            file_url: soal.file_url,
             file_url: soal.file_url
         }));
 

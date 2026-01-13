@@ -98,6 +98,49 @@ const PencarianSoal = () => {
         setSelectedYear('');
     };
 
+    const handleLike = async (soalId) => {
+        // Check session storage
+        const likedSoals = JSON.parse(sessionStorage.getItem('likedSoals') || '[]');
+        
+        if (likedSoals.includes(soalId)) {
+            showToast("Anda sudah menyukai soal ini di sesi ini.", "info");
+            return;
+        }
+
+        try {
+             // Optimistic update
+             const updateLikes = (list) => list.map(s => 
+                s.id === soalId ? { ...s, likes: (s.likes || 0) + 1 } : s
+             );
+             
+             setSoals(prev => updateLikes(prev));
+
+            // Add to session storage immediately
+            sessionStorage.setItem('likedSoals', JSON.stringify([...likedSoals, soalId]));
+
+            const response = await fetch(`http://localhost:5000/api/soal/${soalId}/like`, {
+                method: 'POST'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to like');
+            }
+        } catch (error) {
+            console.error("Like failed", error);
+            // Revert changes if failed
+             const revertLikes = (list) => list.map(s => 
+                s.id === soalId ? { ...s, likes: (s.likes || 0) - 1 } : s
+             );
+             setSoals(prev => revertLikes(prev));
+             
+             // Remove from session storage
+             const currentLiked = JSON.parse(sessionStorage.getItem('likedSoals') || '[]');
+             sessionStorage.setItem('likedSoals', JSON.stringify(currentLiked.filter(id => id !== soalId)));
+             
+             showToast("Gagal menyukai soal.", "error");
+        }
+    };
+
     const handleDownload = async (soalId, currentUrl) => {
         const userId = localStorage.getItem('userId');
         
@@ -455,6 +498,24 @@ const PencarianSoal = () => {
                                     </button>
 
                                     <div className="flex items-center gap-1.5 md:gap-2 ml-auto md:ml-0">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleLike(soal.id);
+                                            }}
+                                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors group relative"
+                                            title="Sukai Soal"
+                                        >
+                                            <ThumbsUp className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                                            <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-rose-100 text-[8px] font-bold text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                +1
+                                            </span>
+                                        </button>
+                                        <div className="flex items-center gap-1 text-xs md:text-sm text-gray-500 px-2 border-l border-gray-200">
+                                            <ThumbsUp className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-500" />
+                                            <span>{soal.likes || 0}</span>
+                                        </div>
+                                        
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();

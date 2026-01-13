@@ -117,6 +117,14 @@ const Home = () => {
     };
 
     const handleLike = async (soalId) => {
+        // Check session storage
+        const likedSoals = JSON.parse(sessionStorage.getItem('likedSoals') || '[]');
+        
+        if (likedSoals.includes(soalId)) {
+            showToast("Anda sudah menyukai soal ini di sesi ini.", "info");
+            return;
+        }
+
         try {
              // Optimistic update
              const updateLikes = (list) => list.map(s => 
@@ -126,12 +134,30 @@ const Home = () => {
              setPopularSoals(prev => updateLikes(prev));
              setRecentSoals(prev => updateLikes(prev));
 
-            await fetch(`http://localhost:5000/api/soal/${soalId}/like`, {
+            // Add to session storage immediately to prevent double clicks
+            sessionStorage.setItem('likedSoals', JSON.stringify([...likedSoals, soalId]));
+
+            const response = await fetch(`http://localhost:5000/api/soal/${soalId}/like`, {
                 method: 'POST'
             });
+            
+            if (!response.ok) {
+                throw new Error('Failed to like');
+            }
         } catch (error) {
             console.error("Like failed", error);
-            // Revert if needed, but simple counter is fine
+            // Revert changes if failed
+             const revertLikes = (list) => list.map(s => 
+                s.id === soalId ? { ...s, likes: s.likes - 1 } : s
+             );
+             setPopularSoals(prev => revertLikes(prev));
+             setRecentSoals(prev => revertLikes(prev));
+             
+             // Remove from session storage
+             const currentLiked = JSON.parse(sessionStorage.getItem('likedSoals') || '[]');
+             sessionStorage.setItem('likedSoals', JSON.stringify(currentLiked.filter(id => id !== soalId)));
+             
+             showToast("Gagal menyukai soal.", "error");
         }
     };
 
