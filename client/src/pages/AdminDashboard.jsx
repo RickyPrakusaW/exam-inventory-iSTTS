@@ -22,7 +22,6 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalSoal: 0,
-        mahasiswaCount: 0,
         totalDownloads: 0,
         laporanCount: 0
     });
@@ -77,7 +76,6 @@ const AdminDashboard = () => {
 
     const statCards = [
         { title: 'Total Arsip Soal', value: stats.totalSoal, icon: <FileText className="text-blue-600" />, bg: 'bg-blue-50' },
-        { title: 'Mahasiswa Terdaftar', value: stats.mahasiswaCount, icon: <Users className="text-green-600" />, bg: 'bg-green-50' },
         { title: 'Total Unduhan', value: stats.totalDownloads, icon: <Download className="text-amber-600" />, bg: 'bg-amber-50' },
         { title: 'Laporan Masuk', value: stats.laporanCount, icon: <AlertCircle className="text-rose-600" />, bg: 'bg-rose-50' },
     ];
@@ -99,7 +97,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
                 {statCards.map((stat, index) => (
                     <div key={index} className="bg-white p-4 md:p-6 rounded-xl md:rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 group hover:shadow-md transition-all">
                         <div className={`p-2.5 md:p-4 ${stat.bg} rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform shrink-0`}>
