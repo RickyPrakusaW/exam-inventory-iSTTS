@@ -39,7 +39,6 @@ function App() {
                   <Route path="/library" element={<PerpustakaanPribadi />} />
                   <Route path="/history" element={<RiwayatUnduhan />} />
 
-                  <Route path="/settings" element={<Pengaturan />} />
                 </Route>
               </Route>
 

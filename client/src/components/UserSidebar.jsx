@@ -19,7 +19,7 @@ const UserSidebar = ({ isOpen, onClose }) => {
         { name: 'Perpustakaan Pribadi', icon: <Bookmark size={22} />, path: '/library' },
         { name: 'Riwayat Unduhan', icon: <History size={22} />, path: '/history' },
 
-        { name: 'Pengaturan Akun', icon: <Settings size={22} />, path: '/settings' },
+
     ];
 
     return (
