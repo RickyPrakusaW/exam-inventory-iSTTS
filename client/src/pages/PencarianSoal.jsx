@@ -69,6 +69,12 @@ const PencarianSoal = () => {
         fetchSoals();
     }, []);
 
+    const [selectedSemester, setSelectedSemester] = useState('');
+    const [selectedYear, setSelectedYear] = useState('');
+
+    // Available years derived from current soals
+    const availableYears = [...new Set(soals.map(s => s.tahunAjaran))].sort().reverse();
+    
     // Filter hasil pencarian
     const filteredResults = soals.filter(soal => {
         const matchesSearch = searchTerm === '' || 
@@ -78,9 +84,19 @@ const PencarianSoal = () => {
         
         const matchesJurusan = selectedJurusan === '' || soal.programStudi === selectedJurusan;
         const matchesType = selectedType === '' || soal.jenisUjian === selectedType;
+        const matchesSemester = selectedSemester === '' || soal.semester === selectedSemester;
+        const matchesYear = selectedYear === '' || soal.tahunAjaran === selectedYear;
         
-        return matchesSearch && matchesJurusan && matchesType;
+        return matchesSearch && matchesJurusan && matchesType && matchesSemester && matchesYear;
     });
+
+    const handleResetFilter = () => {
+        setSearchTerm('');
+        setSelectedJurusan('');
+        setSelectedType('');
+        setSelectedSemester('');
+        setSelectedYear('');
+    };
 
     const handleDownload = async (soalId, currentUrl) => {
         const userId = localStorage.getItem('userId');
@@ -261,7 +277,8 @@ const PencarianSoal = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {/* Filter Prodi */}
                         <div className="relative">
                             <select 
                                 className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-6 py-2.5 md:py-4 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base"
@@ -275,13 +292,15 @@ const PencarianSoal = () => {
                             </select>
                             <Filter className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4 md:w-[18px] md:h-[18px]" />
                         </div>
+                        
+                        {/* Filter Jenis Ujian */}
                         <div className="relative">
                             <select 
                                 className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-6 py-2.5 md:py-4 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base"
                                 value={selectedType}
                                 onChange={(e) => setSelectedType(e.target.value)}
                             >
-                                <option value="">Semua Jenis Ujian</option>
+                                <option value="">Semua Jenis</option>
                                 <option value="UTS">UTS</option>
                                 <option value="UAS">UAS</option>
                                 <option value="Kuis">Kuis</option>
@@ -289,14 +308,40 @@ const PencarianSoal = () => {
                             </select>
                             <Filter className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4 md:w-[18px] md:h-[18px]" />
                         </div>
+
+                        {/* Filter Semester */}
+                        <div className="relative">
+                            <select 
+                                className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-6 py-2.5 md:py-4 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base"
+                                value={selectedSemester}
+                                onChange={(e) => setSelectedSemester(e.target.value)}
+                            >
+                                <option value="">Semua Semester</option>
+                                <option value="Ganjil">Ganjil</option>
+                                <option value="Genap">Genap</option>
+                            </select>
+                            <Filter className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4 md:w-[18px] md:h-[18px]" />
+                        </div>
+
+                        {/* Filter Tahun */}
+                        <div className="relative">
+                            <select 
+                                className="appearance-none w-full bg-gray-50 border border-gray-100 px-4 md:px-6 py-2.5 md:py-4 rounded-xl md:rounded-2xl pr-10 md:pr-12 font-medium text-gray-700 outline-none focus:ring-2 focus:ring-rose-100 transition-all cursor-pointer text-sm md:text-base"
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(e.target.value)}
+                            >
+                                <option value="">Semua Tahun</option>
+                                {availableYears.map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
+                            <Filter className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4 md:w-[18px] md:h-[18px]" />
+                        </div>
                     </div>
-                    {(selectedJurusan || selectedType || searchTerm) && (
+
+                    {(selectedJurusan || selectedType || searchTerm || selectedSemester || selectedYear) && (
                         <button 
-                            onClick={() => {
-                                setSearchTerm('');
-                                setSelectedJurusan('');
-                                setSelectedType('');
-                            }}
+                            onClick={handleResetFilter}
                             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm md:text-base font-medium rounded-xl md:rounded-2xl transition-all active:scale-95"
                         >
                             Reset Filter
