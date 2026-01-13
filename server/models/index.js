@@ -21,7 +21,7 @@ Soal.belongsTo(Matkul, { foreignKey: 'matkul_id' });
 
 // User (Uploader) <-> Soal
 User.hasMany(Soal, { foreignKey: 'uploader_id' });
-Soal.belongsTo(User, { foreignKey: 'uploader_id' });
+Soal.belongsTo(User, { foreignKey: 'uploader_id', as: 'Uploader' });
 
 // User (Reporter) <-> Laporan
 User.hasMany(Laporan, { foreignKey: 'reporter_id' });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, FileSpreadsheet, FileText, Calendar, Filter, Database } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -6,6 +6,27 @@ const EksporData = () => {
     const { showToast } = useToast();
     const [selectedType, setSelectedType] = useState('soal');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [stats, setStats] = useState({
+        soal: 0,
+        mahasiswa: 0,
+        unduhan: 0,
+        laporan: 0
+    });
+    
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/export/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch stats", error);
+            }
+        };
+        fetchStats();
+    }, []);
 
     const exportTypes = [
         {
@@ -14,7 +35,7 @@ const EksporData = () => {
             desc: 'Ekspor semua data soal beserta metadata',
             icon: <FileText className="text-blue-600" />,
             bg: 'bg-blue-50',
-            count: '1,247 soal'
+            count: `${stats.soal.toLocaleString()} soal`
         },
         {
             id: 'mahasiswa',
@@ -22,7 +43,7 @@ const EksporData = () => {
             desc: 'Ekspor data mahasiswa dan aktivitas',
             icon: <Database className="text-green-600" />,
             bg: 'bg-green-50',
-            count: '3,456 mahasiswa'
+            count: `${stats.mahasiswa.toLocaleString()} mahasiswa`
         },
         {
             id: 'unduhan',
@@ -30,7 +51,7 @@ const EksporData = () => {
             desc: 'Ekspor log semua aktivitas unduhan',
             icon: <Download className="text-amber-600" />,
             bg: 'bg-amber-50',
-            count: '12,890 unduhan'
+            count: `${stats.unduhan.toLocaleString()} unduhan`
         },
         {
             id: 'laporan',
@@ -38,13 +59,47 @@ const EksporData = () => {
             desc: 'Ekspor semua laporan dari mahasiswa',
             icon: <FileSpreadsheet className="text-rose-600" />,
             bg: 'bg-rose-50',
-            count: '65 laporan'
+            count: `${stats.laporan.toLocaleString()} laporan`
         }
     ];
 
-    const handleExport = () => {
-        // Simulasi export
-        showToast(`Mengekspor data ${exportTypes.find(t => t.id === selectedType)?.name}...`, 'info');
+    const handleExport = async () => {
+        try {
+            showToast(`Mempersiapkan ekspor ${exportTypes.find(t => t.id === selectedType)?.name}...`, 'info');
+            
+            const params = new URLSearchParams({
+                type: selectedType,
+                format: document.querySelector('input[name="format"]:checked').value
+            });
+            
+            if (dateRange.start) params.append('start_date', dateRange.start);
+            if (dateRange.end) params.append('end_date', dateRange.end);
+
+            const response = await fetch(`http://localhost:5000/api/export?${params.toString()}`);
+            
+            if (!response.ok) throw new Error('Export failed');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let fileName = `export_${selectedType}_${new Date().toISOString().split('T')[0]}.${params.get('format')}`;
+            if (contentDisposition) {
+                 const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                 if (fileNameMatch && fileNameMatch.length === 2) fileName = fileNameMatch[1];
+            }
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            showToast('Data berhasil diekspor', 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            showToast('Gagal mengekspor data', 'error');
+        }
     };
 
     return (

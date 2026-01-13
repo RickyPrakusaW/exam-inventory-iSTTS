@@ -35,6 +35,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/berita', beritaRoutes);
 app.use('/api/laporan', laporanRoutes);
+app.use('/api/export', require('./routes/exportRoutes'));
 
 // Test Route
 app.get('/', (req, res) => {
