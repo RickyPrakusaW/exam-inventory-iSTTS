@@ -208,70 +208,72 @@ exports.restoreBackup = async (req, res) => {
         );
 
         response.data
-            .on('end', async () => {
-                try {
-                    // Extract
-                    const zip = new AdmZip(zipPath);
-                    zip.extractAllTo(backupDir, true);
-
-                    // Restore Uploads
-                   // Note: This replaces the entire directory. 
-                   // Ideally we should maybe clear existing uploads first? 
-                   // Or just overwrite. Overwrite is safer than delete+write if something fails mid-way.
-                   // But "restore" usually implies "state at that time".
-                   // Let's clear target upload dir first or just move it to a temporary trash.
-                   
-                    const uploadsSrc = path.join(backupDir, 'uploads');
-                    const uploadsDest = path.join(__dirname, '../public/uploads');
-
-                    if (fs.existsSync(uploadsSrc)) {
-                         // Simple strategy: Sync files. 
-                         // For true restore: Delete current uploads, move new uploads in.
-                         fs.rmSync(uploadsDest, { recursive: true, force: true });
-                         fs.renameSync(uploadsSrc, uploadsDest);
-                    }
-
-                    // Restore DB
-                    const db = require('../models');
-                    const dbDumpPath = path.join(backupDir, 'db_dump');
-                    if (fs.existsSync(dbDumpPath)) {
-                        const files = fs.readdirSync(dbDumpPath);
-                        
-                        // Disable Foreign Key checks?
-                        await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
-                        
-                        for (const file of files) {
-                            if (!file.endsWith('.json')) continue;
-                            const modelName = file.replace('.json', '');
-                            if (db[modelName]) {
-                                const data = JSON.parse(fs.readFileSync(path.join(dbDumpPath, file)));
-                                await db[modelName].destroy({ truncate: true, cascade: true }); // Clear table
-                                await db[modelName].bulkCreate(data);
-                            }
-                        }
-                        
-                        await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
-                    }
-
-                    // Cleanup
-                    fs.unlinkSync(zipPath);
-                    // fs.rmSync(dbDumpPath, { recursive: true, force: true }); // Already moved or deleted? 
-                    // Actually we extracted to backupDir which has headers 'db_dump' and 'uploads'.
-                    // We moved 'uploads' so 'db_dump' is still there.
-                    fs.rmSync(backupDir, { recursive: true, force: true });
-
-                    res.json({ success: true, message: 'Restore completed successfully' });
-
-                } catch (err) {
-                    console.error('Restore processing error:', err);
-                    res.status(500).json({ message: 'Restore processing failed', error: err.message });
-                }
-            })
             .on('error', (err) => {
                 console.error('Download error:', err);
                 res.status(500).json({ message: 'Download failed', error: err.message });
             })
             .pipe(dest);
+
+        dest.on('finish', async () => {
+            try {
+                // Extract
+                const zip = new AdmZip(zipPath);
+                zip.extractAllTo(backupDir, true);
+
+                // Restore Uploads
+                const uploadsSrc = path.join(backupDir, 'uploads');
+                const uploadsDest = path.join(__dirname, '../public/uploads');
+
+                if (fs.existsSync(uploadsSrc)) {
+                        // Simple strategy: Sync files. 
+                        // For true restore: Delete current uploads, move new uploads in.
+                        fs.rmSync(uploadsDest, { recursive: true, force: true });
+                        fs.renameSync(uploadsSrc, uploadsDest);
+                }
+
+                // Restore DB
+                const db = require('../models');
+                const dbDumpPath = path.join(backupDir, 'db_dump');
+                if (fs.existsSync(dbDumpPath)) {
+                    const files = fs.readdirSync(dbDumpPath);
+                    
+                    // Disable Foreign Key checks?
+                    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+                    
+                    for (const file of files) {
+                        if (!file.endsWith('.json')) continue;
+                        const modelName = file.replace('.json', '');
+                        if (db[modelName]) {
+                            const data = JSON.parse(fs.readFileSync(path.join(dbDumpPath, file)));
+                            await db[modelName].destroy({ truncate: true, cascade: true }); // Clear table
+                            await db[modelName].bulkCreate(data);
+                        }
+                    }
+                    
+                    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+                }
+
+                // Cleanup
+                fs.unlinkSync(zipPath);
+                fs.rmSync(backupDir, { recursive: true, force: true });
+
+                res.json({ success: true, message: 'Restore completed successfully' });
+
+            } catch (err) {
+                console.error('Restore processing error:', err);
+                // Only send response if not already sent (though difficult to guarantee here without flag)
+                if (!res.headersSent) {
+                     res.status(500).json({ message: 'Restore processing failed', error: err.message });
+                }
+            }
+        });
+
+        dest.on('error', (err) => {
+             console.error('File write error:', err);
+             if (!res.headersSent) {
+                res.status(500).json({ message: 'File write failed', error: err.message });
+             }
+        });
 
     } catch (error) {
         console.error('Restore init error:', error);
