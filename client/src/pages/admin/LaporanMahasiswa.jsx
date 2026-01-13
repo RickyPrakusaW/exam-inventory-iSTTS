@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
-import { AlertTriangle, Search, Eye, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
+import { AlertTriangle, Search, Eye, CheckCircle, XCircle, Clock, Filter, Edit } from 'lucide-react';
+import SoalFormModal from '../../components/soal/SoalFormModal';
 
 const LaporanMahasiswa = () => {
     const { showToast } = useToast();
@@ -10,6 +11,11 @@ const LaporanMahasiswa = () => {
     const [statusFilter, setStatusFilter] = useState('Semua Status');
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Edit Soal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null); // This will hold the SOAL object, not the report
+    const [matkuls, setMatkuls] = useState([]);
 
     const fetchReports = async () => {
         try {
@@ -26,8 +32,21 @@ const LaporanMahasiswa = () => {
         }
     };
 
+    const fetchMatkuls = async () => {
+         try {
+             const response = await fetch('http://localhost:5000/api/master/matkul');
+             if (response.ok) {
+                 const data = await response.json();
+                 setMatkuls(data);
+             }
+         } catch (error) {
+             console.error("Failed to fetch matkuls", error);
+         }
+    };
+
     useEffect(() => {
         fetchReports();
+        fetchMatkuls();
     }, []);
 
     const handleUpdateStatus = async (id, newStatus) => {
@@ -59,13 +78,86 @@ const LaporanMahasiswa = () => {
         }
     };
 
+    // Edit Soal Handlers
+    const handleEditSoal = (soal) => {
+        if (!soal) {
+             showToast('Data soal tidak ditemukan', 'error');
+             return;
+        }
+        setSelectedItem(soal);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedItem(null);
+    };
+
+    const handleSaveSoal = async (formDataState) => {
+        try {
+            const formData = new FormData();
+            formData.append('title', formDataState.title);
+            formData.append('type', formDataState.type);
+            formData.append('year', formDataState.year);
+            formData.append('matkul_id', formDataState.matkul_id);
+            // Default uploader_id to 1 (admin) for now, or keep existing? 
+            // The backend might need uploader_id if it's a new file, but for edit strictly speaking we might want to preserve original uploader.
+            // However, looking at ManajemenSoal, it hardcodes uploader_id to 1. Let's do same for consistency or maybe fetch current user if possible.
+            // For now, hardcode 1 as 'Admin' is editing.
+            formData.append('uploader_id', 1); 
+            formData.append('status', formDataState.status);
+
+            const selectedMatkul = matkuls.find(m => m.id == formDataState.matkul_id);
+            if (selectedMatkul) {
+                formData.append('matkul_name', selectedMatkul.name);
+                formData.append('prodi_name', selectedMatkul.Prodi ? selectedMatkul.Prodi.name : 'Unknown');
+                formData.append('prodi_code', selectedMatkul.Prodi ? selectedMatkul.Prodi.code : 'Unknown');
+                formData.append('semester_num', selectedMatkul.semester);
+            }
+
+            if (formDataState.file) {
+                formData.append('file', formDataState.file);
+            }
+
+            // We are ALWAYS editing here because we clicked "Edit Soal" on an existing soal
+            if (!selectedItem || !selectedItem.id) {
+                showToast('Error: No selected soal to update', 'error');
+                return;
+            }
+
+            const url = `http://localhost:5000/api/soal/${selectedItem.id}`;
+            const method = 'PUT';
+
+            const response = await fetch(url, {
+                method,
+                body: formData
+            });
+
+            if (response.ok) {
+                handleCloseModal();
+                fetchReports(); // Refresh reports which might update Soal details shown? Actually Soal details in list might not update unless we refetch or they are from included model. 
+                // Creating a separate fetchSoals isn't needed here as we view via Reports. 
+                // But we should probably refresh reports to show updated Soal name if it changed.
+                showToast('Soal berhasil diperbarui', 'success');
+            } else {
+                let errorMessage = 'Failed to save soal';
+                try {
+                    const err = await response.json();
+                    errorMessage = err.message || errorMessage;
+                } catch (e) {
+                    console.error("Non-JSON error response", e);
+                    errorMessage = 'Terjadi kesalahan pada server';
+                }
+                showToast(errorMessage, 'error');
+            }
+        } catch (error) {
+            console.error('Error saving soal:', error);
+            showToast('Error saving soal', 'error');
+        }
+    };
+
+
     const pendingCount = reports.filter(r => r.status === 'pending').length;
-    const processCount = reports.filter(r => r.status === 'resolved').length; // Assuming resolved = diproses/selesai mapping? 
-    // Wait, status enum is 'pending', 'resolved', 'rejected'.
-    // UI has 'Menunggu', 'Diproses', 'Selesai'.
-    // Let's map 'pending' -> 'Menunggu', 'resolved' -> 'Selesai'. 'rejected' -> 'Ditolak' (or maybe map to something else).
-    // The previous mock data had 'Diproses'. I should probably stick to the enum 'pending', 'resolved', 'rejected' for simplicity or update the enum.
-    // For now, I will treat 'resolved' as 'Selesai'.
     const doneCount = reports.filter(r => r.status === 'resolved').length;
 
     const filteredReports = reports.filter(item => {
@@ -212,6 +304,18 @@ const LaporanMahasiswa = () => {
                                 <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                 Lihat Soal
                             </button>
+                            
+                            {/* NEW: Edit Button for Pending Reports */}
+                            {item.status === 'pending' && (
+                                <button 
+                                    onClick={() => handleEditSoal(item.Soal)}
+                                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 text-xs md:text-sm font-bold rounded-lg md:rounded-xl hover:bg-blue-100 transition-colors active:scale-95"
+                                >
+                                    <Edit className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                    Edit Soal
+                                </button>
+                            )}
+
                             {item.status === 'pending' && (
                                 <>
                                     <button 
@@ -234,6 +338,14 @@ const LaporanMahasiswa = () => {
                     </div>
                 ))}
             </div>
+
+            <SoalFormModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                onSubmit={handleSaveSoal}
+                initialData={selectedItem}
+                matkuls={matkuls}
+            />
         </div>
     );
 };
