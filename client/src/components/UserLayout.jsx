@@ -34,12 +34,12 @@ const UserLayout = () => {
                         
                         <div className="h-8 w-[1px] bg-gray-200 mx-2 hidden sm:block"></div>
 
-                        <div className="flex items-center gap-3 cursor-pointer group">
+                        <div className="flex items-center gap-3">
                             <div className="text-right hidden sm:block">
-                                <p className="text-sm font-bold text-gray-800 group-hover:text-rose-600 transition-colors">Mahasiswa iSTTS</p>
+                                <p className="text-sm font-bold text-gray-800">Mahasiswa iSTTS</p>
                                 <p className="text-[11px] text-gray-400 font-medium uppercase">222222222</p>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all">
+                            <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
                                 <UserIcon size={20} />
                             </div>
                         </div>
