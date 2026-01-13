@@ -16,8 +16,6 @@ import InformasiBerita from './pages/InformasiBerita';
 import PencarianSoal from './pages/PencarianSoal';
 import PerpustakaanPribadi from './pages/PerpustakaanPribadi';
 import RiwayatUnduhan from './pages/RiwayatUnduhan';
-
-import Pengaturan from './pages/Pengaturan';
 import NotFound from './pages/NotFound';
 
 import { ToastProvider } from './contexts/ToastContext';

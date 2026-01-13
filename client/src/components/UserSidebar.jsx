@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Newspaper, Search, Bookmark, History, TrendingUp, X, LogOut, BookOpen, Settings } from 'lucide-react';
+import { Home, Newspaper, Search, Bookmark, History, TrendingUp, X, LogOut, BookOpen } from 'lucide-react';
 import { logout } from '../services/authService';
 
 const UserSidebar = ({ isOpen, onClose }) => {
