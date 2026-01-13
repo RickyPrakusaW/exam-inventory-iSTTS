@@ -143,6 +143,14 @@ const PencarianSoal = () => {
                 
                 if (response.ok) {
                     const data = await response.json();
+                    
+                    // Update local state to reflect increased download count
+                    setSoals(prevSoals => prevSoals.map(s => 
+                        s.id === soalId 
+                            ? { ...s, downloads: (s.downloads || 0) + 1 }
+                            : s
+                    ));
+
                     if (data.file_url) {
                          window.open(data.file_url, '_blank');
                          return;
