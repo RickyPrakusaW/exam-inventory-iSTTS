@@ -38,14 +38,6 @@ const EksporData = () => {
             count: `${stats.soal.toLocaleString()} soal`
         },
         {
-            id: 'mahasiswa',
-            name: 'Data Mahasiswa',
-            desc: 'Ekspor data mahasiswa dan aktivitas',
-            icon: <Database className="text-green-600" />,
-            bg: 'bg-green-50',
-            count: `${stats.mahasiswa.toLocaleString()} mahasiswa`
-        },
-        {
             id: 'unduhan',
             name: 'Riwayat Unduhan',
             desc: 'Ekspor log semua aktivitas unduhan',

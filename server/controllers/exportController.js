@@ -74,33 +74,6 @@ exports.exportData = async (req, res) => {
                 });
             });
 
-        } else if (type === 'mahasiswa') {
-             const data = await User.findAll({
-                where: { ...dateFilter, role: 'mahasiswa' },
-                order: [['createdAt', 'DESC']]
-            });
-
-            worksheet.columns = [
-                { header: 'ID', key: 'id', width: 10 },
-                { header: 'Nama', key: 'name', width: 25 },
-                { header: 'Email', key: 'email', width: 30 },
-                { header: 'NRP/NIP', key: 'nrp', width: 15 },
-                { header: 'Jurusan', key: 'major', width: 20 },
-                { header: 'Tahun Masuk', key: 'batch', width: 15 },
-                { header: 'Terdaftar Sejak', key: 'created_at', width: 20 }
-            ];
-
-            data.forEach(item => {
-                worksheet.addRow({
-                    id: item.id,
-                    name: item.name,
-                    email: item.email,
-                    nrp: item.nrp,
-                    major: item.major || '-',
-                    batch: item.batch || '-',
-                    created_at: item.createdAt
-                });
-            });
 
         } else if (type === 'unduhan') {
              const data = await DownloadHistory.findAll({
