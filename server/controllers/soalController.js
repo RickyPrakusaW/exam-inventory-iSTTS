@@ -288,15 +288,21 @@ const deleteSoal = async (req, res) => {
 
 const emailSoals = async (req, res) => {
     try {
-        const { userId, soalIds } = req.body;
+        const { userId, soalIds, targetEmail } = req.body;
 
         if (!userId || !soalIds || !Array.isArray(soalIds) || soalIds.length === 0) {
             return res.status(400).json({ message: 'User ID and selected Soals are required.' });
         }
 
         const user = await User.findByPk(userId);
-        if (!user || !user.email) {
-             return res.status(404).json({ message: 'User not found or no email registered.' });
+        if (!user) {
+             return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const recipientEmail = targetEmail || user.email;
+
+        if (!recipientEmail) {
+            return res.status(400).json({ message: 'No recipient email provided or found for user.' });
         }
 
         const soals = await Soal.findAll({
@@ -348,6 +354,7 @@ const emailSoals = async (req, res) => {
         <ul>
             ${soals.map(s => `<li>${s.title}</li>`).join('')}
         </ul>
+        <p>File ini dikirimkan ke <strong>${recipientEmail}</strong>.</p>
         <p>Semoga bermanfaat!</p>
         <br>
         <p>Salam,<br>Tim Exam Inventory</p>`;
@@ -356,10 +363,10 @@ const emailSoals = async (req, res) => {
             html += `<p style="color: red;">Catatan: Beberapa file berikut tidak dapat ditemukan: ${missingFiles.join(', ')}</p>`;
         }
 
-        await sendEmail(user.email, subject, html, attachments);
+        await sendEmail(recipientEmail, subject, html, attachments);
 
         res.json({ 
-            message: `Email sent successfully to ${user.email}`, 
+            message: `Email sent successfully to ${recipientEmail}`, 
             sentCount: attachments.length,
             missingCount: missingFiles.length 
         });

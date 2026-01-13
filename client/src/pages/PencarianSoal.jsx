@@ -20,6 +20,10 @@ const PencarianSoal = () => {
     const [reportReason, setReportReason] = useState('');
     const [reportType, setReportType] = useState('Soal Rusak');
 
+    // Email Modal State
+    const [emailModalOpen, setEmailModalOpen] = useState(false);
+    const [targetEmail, setTargetEmail] = useState('');
+
     const [soals, setSoals] = useState([]);
     const [prodiList, setProdiList] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -233,7 +237,7 @@ const PencarianSoal = () => {
         }
     };
 
-    const handleEmailFiles = async () => {
+    const handleEmailFiles = () => {
         const userId = localStorage.getItem('userId');
         if (!userId) {
             showToast('Silakan login terlebih dahulu', 'warning');
@@ -245,14 +249,19 @@ const PencarianSoal = () => {
             return;
         }
 
-        const isConfirmed = await confirm({
-            title: 'Kirim Email',
-            message: `Apakah Anda yakin ingin mengirim ${selectedIds.size} file terpilih ke email Anda?`,
-            confirmText: 'Kirim',
-            type: 'info' // Using info or default
-        });
+        // Open modal
+        setEmailModalOpen(true);
+        setTargetEmail(''); // Reset email or could pre-fill if we had user email in local state
+    };
 
-        if (!isConfirmed) return;
+    const sendEmailWithTarget = async (e) => {
+        e.preventDefault();
+        const userId = localStorage.getItem('userId');
+        
+        if (!targetEmail || !targetEmail.includes('@')) {
+            showToast('Mohon masukkan email yang valid', 'warning');
+            return;
+        }
 
         try {
             showToast('Sedang mengirim email...', 'info');
@@ -261,16 +270,18 @@ const PencarianSoal = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     userId, 
-                    soalIds: Array.from(selectedIds) 
+                    soalIds: Array.from(selectedIds),
+                    targetEmail: targetEmail
                 })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                showToast('Email berhasil dikirim!', 'success');
+                showToast(`Email berhasil dikirim ke ${targetEmail}!`, 'success');
                 setSelectionMode(false);
                 setSelectedIds(new Set());
+                setEmailModalOpen(false);
             } else {
                 showToast(data.message || 'Gagal mengirim email', 'error');
             }
@@ -593,6 +604,65 @@ const PencarianSoal = () => {
                     </div>
                 </div>
             )}
+
+            {/* Email Modal */}
+            {emailModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                <Mail className="w-5 h-5 text-rose-600" />
+                                Kirim File ke Email
+                            </h3>
+                            <button 
+                                onClick={() => setEmailModalOpen(false)}
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-4 md:p-6">
+                            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <p className="text-xs text-gray-500 mb-1">Anda akan mengirim {selectedIds.size} file terpilih.</p>
+                                <p className="text-sm text-gray-700">Silakan masukkan alamat email tujuan pengiriman file.</p>
+                            </div>
+
+                            <form onSubmit={sendEmailWithTarget} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Alamat Email</label>
+                                    <input 
+                                        type="email"
+                                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-100 focus:border-rose-400 outline-none text-sm font-medium text-gray-900 placeholder:text-gray-400"
+                                        placeholder="contoh@email.com"
+                                        value={targetEmail}
+                                        onChange={(e) => setTargetEmail(e.target.value)}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                
+                                <div className="flex gap-3 pt-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setEmailModalOpen(false)}
+                                        className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        className="flex-1 px-4 py-2.5 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-colors shadow-lg shadow-rose-200"
+                                    >
+                                        Kirim
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
