@@ -103,7 +103,7 @@ const PencarianSoal = () => {
         const likedSoals = JSON.parse(sessionStorage.getItem('likedSoals') || '[]');
         
         if (likedSoals.includes(soalId)) {
-            showToast("Anda sudah menyukai soal ini di sesi ini.", "info");
+            showToast("Anda sudah menyukai soal ini.", "info");
             return;
         }
 
